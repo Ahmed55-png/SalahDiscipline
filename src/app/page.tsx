@@ -4,11 +4,35 @@ import { getTimingsByCity } from '@/lib/api/aladhan'
 export default async function Home() {
   let supabaseStatus = 'Not tested'
   let supabaseError = ''
+  let tablesStatus = 'Not tested'
+  let tablesDetail = ''
   try {
     const supabase = await createClient()
     const { error } = await supabase.auth.getSession()
     supabaseStatus = error ? 'Error' : 'Connected ✓'
     if (error) supabaseError = error.message
+
+    // Touch each table — RLS will return 0 rows for anon users (expected)
+    const tables = [
+      'profiles',
+      'daily_prayers',
+      'streaks',
+      'friendships',
+      'shared_streaks',
+    ] as const
+    const results = await Promise.all(
+      tables.map((t) => supabase.from(t).select('*', { count: 'exact', head: true }))
+    )
+    const missing = results
+      .map((r, i) => (r.error ? tables[i] : null))
+      .filter(Boolean)
+    if (missing.length === 0) {
+      tablesStatus = 'All 5 tables reachable ✓'
+      tablesDetail = 'RLS active — anon sees 0 rows (expected)'
+    } else {
+      tablesStatus = 'Missing tables'
+      tablesDetail = missing.join(', ')
+    }
   } catch (e) {
     supabaseStatus = 'Failed'
     supabaseError = e instanceof Error ? e.message : 'Unknown error'
@@ -57,6 +81,27 @@ export default async function Home() {
             <p className="text-xs text-red-600 dark:text-red-400 font-mono">
               {supabaseError}
             </p>
+          )}
+        </section>
+
+        <section className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 space-y-3">
+          <h2 className="font-semibold text-zinc-900 dark:text-zinc-50">
+            Database Tables (Phase 2)
+          </h2>
+          <p className="text-sm">
+            Status:{' '}
+            <span
+              className={
+                tablesStatus.includes('✓')
+                  ? 'text-green-600 dark:text-green-400 font-medium'
+                  : 'text-red-600 dark:text-red-400 font-medium'
+              }
+            >
+              {tablesStatus}
+            </span>
+          </p>
+          {tablesDetail && (
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">{tablesDetail}</p>
           )}
         </section>
 
@@ -115,7 +160,7 @@ export default async function Home() {
         </section>
 
         <p className="text-center text-xs text-zinc-500">
-          If both show ✓ — Phase 1 is complete!
+          If all three show ✓ — Phases 1 & 2 are complete!
         </p>
       </div>
     </main>
