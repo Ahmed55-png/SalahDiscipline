@@ -1,26 +1,107 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Islamic-themed palette */
+  --emerald-deep: #064E3B;
+  --emerald: #0F5132;
+  --emerald-light: #10B981;
+  --gold: #D4AF37;
+  --gold-light: #F4D03F;
+  --gold-soft: #FCE7A8;
+  --cream: #FAF8F1;
+  --ink: #0A1F1A;
+  --ink-soft: #14352A;
+
+  --background: var(--cream);
+  --foreground: var(--ink);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-emerald-deep: var(--emerald-deep);
+  --color-emerald-brand: var(--emerald);
+  --color-gold: var(--gold);
+  --color-gold-light: var(--gold-light);
+  --color-gold-soft: var(--gold-soft);
+  --color-cream: var(--cream);
+  --font-sans: var(--font-jakarta);
+  --font-display: var(--font-amiri);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: var(--ink);
+    --foreground: #F5F1E4;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-jakarta), system-ui, sans-serif;
+  min-height: 100vh;
+  background-image:
+    radial-gradient(at 20% 0%, rgba(212, 175, 55, 0.08) 0px, transparent 50%),
+    radial-gradient(at 80% 100%, rgba(16, 185, 129, 0.06) 0px, transparent 50%);
+  background-attachment: fixed;
+}
+
+/* Islamic geometric pattern — eight-pointed star tessellation, very subtle */
+.islamic-pattern {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'><g fill='none' stroke='%230F5132' stroke-width='0.6' opacity='0.18'><path d='M40 4 L52 16 L68 16 L68 32 L80 40 L68 48 L68 64 L52 64 L40 76 L28 64 L12 64 L12 48 L0 40 L12 32 L12 16 L28 16 Z'/><circle cx='40' cy='40' r='14'/></g></svg>");
+  background-size: 80px 80px;
+}
+
+.islamic-pattern-dense {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'><g fill='none' stroke='%23D4AF37' stroke-width='0.5' opacity='0.25'><path d='M20 2 L26 8 L34 8 L34 16 L40 20 L34 24 L34 32 L26 32 L20 38 L14 32 L6 32 L6 24 L0 20 L6 16 L6 8 L14 8 Z'/></g></svg>");
+  background-size: 40px 40px;
+}
+
+/* Soft glow utility */
+.glow-emerald {
+  box-shadow: 0 0 24px -4px rgba(16, 185, 129, 0.45), 0 0 60px -8px rgba(16, 185, 129, 0.25);
+}
+.glow-gold {
+  box-shadow: 0 0 24px -4px rgba(212, 175, 55, 0.55), 0 0 60px -8px rgba(212, 175, 55, 0.3);
+}
+
+/* Animations */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer-gold {
+  background-image: linear-gradient(110deg, #D4AF37 30%, #FCE7A8 50%, #D4AF37 70%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 3.5s linear infinite;
+}
+
+@keyframes flame-pulse {
+  0%, 100% { transform: scale(1) rotate(-2deg); filter: drop-shadow(0 0 8px rgba(251, 146, 60, 0.6)); }
+  50%      { transform: scale(1.08) rotate(2deg); filter: drop-shadow(0 0 16px rgba(251, 146, 60, 0.9)); }
+}
+.flame-pulse {
+  animation: flame-pulse 1.6s ease-in-out infinite;
+  display: inline-block;
+}
+
+@keyframes float-soft {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+.float-soft {
+  animation: float-soft 4s ease-in-out infinite;
+}
+
+/* Confetti sparkle for "Today complete" */
+@keyframes sparkle {
+  0%, 100% { opacity: 0; transform: scale(0.5) rotate(0deg); }
+  50%      { opacity: 1; transform: scale(1) rotate(180deg); }
+}
+.sparkle {
+  animation: sparkle 1.4s ease-in-out infinite;
 }
