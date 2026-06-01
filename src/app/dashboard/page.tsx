@@ -6,6 +6,7 @@ import { PrayerCheckIn } from '@/components/PrayerCheckIn'
 import { StreakCard } from '@/components/StreakCard'
 import { FadeIn } from '@/components/FadeIn'
 import { InstallPrompt } from '@/components/InstallPrompt'
+import { NotificationSetup } from '@/components/NotificationSetup'
 import type { PrayerStatus } from '@/types/database'
 
 const PRAYERS = [
@@ -107,6 +108,8 @@ export default async function DashboardPage() {
           current={streak?.current_streak ?? 0}
           longest={streak?.longest_streak ?? 0}
         />
+
+        <NotificationSetup />
 
         <PrayerCheckIn prayers={prayerRows} />
 
