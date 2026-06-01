@@ -10,6 +10,14 @@ import { InstallPrompt } from '@/components/InstallPrompt'
 import { NotificationSetup } from '@/components/NotificationSetup'
 import { RotatingGreeting } from '@/components/RotatingGreeting'
 import { DailyAyah } from '@/components/DailyAyah'
+import { LastWeekStrip, type WeekDay } from '@/components/LastWeekStrip'
+import {
+  last7Days,
+  toIsoDate,
+  startOfDay,
+  weekdayShort,
+  type DayStatuses,
+} from '@/lib/utils/calendar'
 
 const DASHBOARD_GREETINGS = [
   'Welcome back',
@@ -43,26 +51,64 @@ export default async function DashboardPage() {
   if (!user) redirect('/login')
 
   const ayahNumber = randomAyahNumber()
-  const [{ data: profile }, { data: streak }, { data: today }, ayah] =
-    await Promise.all([
-      supabase
-        .from('profiles')
-        .select('username, city, country, calculation_method')
-        .eq('id', user.id)
-        .single(),
-      supabase
-        .from('streaks')
-        .select('current_streak, longest_streak')
-        .eq('user_id', user.id)
-        .single(),
-      supabase
-        .from('daily_prayers')
-        .select('fajr, dhuhr, asr, maghrib, isha')
-        .eq('user_id', user.id)
-        .eq('prayer_date', todayIso())
-        .maybeSingle(),
-      getAyahWithTranslation(ayahNumber),
-    ])
+  const todayDate = startOfDay(new Date())
+  const week = last7Days(todayDate)
+  const weekStartIso = toIsoDate(week[0])
+  const weekEndIso = toIsoDate(week[6])
+
+  const [
+    { data: profile },
+    { data: streak },
+    { data: today },
+    { data: weekRows },
+    ayah,
+  ] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('username, city, country, calculation_method')
+      .eq('id', user.id)
+      .single(),
+    supabase
+      .from('streaks')
+      .select('current_streak, longest_streak')
+      .eq('user_id', user.id)
+      .single(),
+    supabase
+      .from('daily_prayers')
+      .select('fajr, dhuhr, asr, maghrib, isha')
+      .eq('user_id', user.id)
+      .eq('prayer_date', todayIso())
+      .maybeSingle(),
+    supabase
+      .from('daily_prayers')
+      .select('prayer_date, fajr, dhuhr, asr, maghrib, isha')
+      .eq('user_id', user.id)
+      .gte('prayer_date', weekStartIso)
+      .lte('prayer_date', weekEndIso),
+    getAyahWithTranslation(ayahNumber),
+  ])
+
+  const weekByDate = new Map<string, DayStatuses>()
+  for (const row of weekRows ?? []) {
+    weekByDate.set(row.prayer_date as string, {
+      fajr: row.fajr,
+      dhuhr: row.dhuhr,
+      asr: row.asr,
+      maghrib: row.maghrib,
+      isha: row.isha,
+    })
+  }
+  const todayIsoStr = toIsoDate(todayDate)
+  const weekDays: WeekDay[] = week.map((d) => {
+    const iso = toIsoDate(d)
+    return {
+      iso,
+      weekday: weekdayShort(d),
+      dayNumber: d.getDate(),
+      isToday: iso === todayIsoStr,
+      statuses: weekByDate.get(iso) ?? null,
+    }
+  })
 
   const city = profile?.city ?? 'Karachi'
   const country = profile?.country ?? 'Pakistan'
@@ -126,6 +172,8 @@ export default async function DashboardPage() {
         />
 
         <NotificationSetup />
+
+        <LastWeekStrip days={weekDays} />
 
         <PrayerCheckIn prayers={prayerRows} />
 
