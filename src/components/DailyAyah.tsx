@@ -8,7 +8,7 @@ type Props = {
 }
 
 export function DailyAyah({ ayah }: Props) {
-  const { arabic, english } = ayah
+  const { arabic, urdu } = ayah
 
   return (
     <motion.section
@@ -53,25 +53,39 @@ export function DailyAyah({ ayah }: Props) {
         {arabic.text}
       </motion.p>
 
-      {/* English translation */}
+      {/* Subtle divider between Arabic and Urdu */}
+      <motion.div
+        initial={{ opacity: 0, scaleX: 0 }}
+        animate={{ opacity: 1, scaleX: 1 }}
+        transition={{ delay: 0.4, duration: 0.5 }}
+        className="relative mx-auto mt-5 h-px w-16 bg-gradient-to-r from-transparent via-gold/40 to-transparent"
+      />
+
+      {/* Urdu translation (Nastaliq font) */}
       <motion.p
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5, duration: 0.6 }}
-        className="relative mt-5 text-sm sm:text-base text-zinc-700 dark:text-zinc-200 leading-relaxed text-center italic"
+        transition={{ delay: 0.55, duration: 0.6 }}
+        dir="rtl"
+        lang="ur"
+        className="relative mt-5 text-base sm:text-lg text-zinc-800 dark:text-zinc-100 text-center"
+        style={{
+          fontFamily: 'var(--font-nastaliq)',
+          lineHeight: 2.2,
+        }}
       >
-        &ldquo;{english.text}&rdquo;
+        {urdu.text}
       </motion.p>
 
       {/* Attribution */}
       <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.75, duration: 0.5 }}
-        className="relative mt-4 text-center text-[11px] uppercase tracking-widest text-gold dark:text-gold-light font-semibold"
+        transition={{ delay: 0.8, duration: 0.5 }}
+        className="relative mt-5 text-center text-[11px] uppercase tracking-widest text-gold dark:text-gold-light font-semibold"
       >
-        Surah {english.surah.englishName} · {english.surah.number}:
-        {english.numberInSurah}
+        Surah {arabic.surah.englishName} · {arabic.surah.number}:
+        {arabic.numberInSurah}
       </motion.p>
 
       {/* Bottom decorative divider */}

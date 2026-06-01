@@ -27,6 +27,7 @@
   --color-cream: var(--cream);
   --font-sans: var(--font-jakarta);
   --font-display: var(--font-amiri);
+  --font-urdu: var(--font-nastaliq);
 }
 
 @media (prefers-color-scheme: dark) {

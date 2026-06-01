@@ -25,7 +25,7 @@ export type Ayah = {
 
 export type AyahPair = {
   arabic: Ayah
-  english: Ayah
+  urdu: Ayah
 }
 
 const TOTAL_AYAHS = 6236
@@ -35,13 +35,14 @@ export function randomAyahNumber(): number {
 }
 
 /**
- * Fetch a single ayah in both Uthmani Arabic and Sahih International English.
+ * Fetch a single ayah in both Uthmani Arabic and Urdu (Maulana Fateh
+ * Muhammad Jalandhry translation — classical, widely respected in Pakistan).
  * Returns null if the network fails — UI should gracefully hide the card.
  */
 export async function getAyahWithTranslation(
   ayahNumber: number
 ): Promise<AyahPair | null> {
-  const url = `https://api.alquran.cloud/v1/ayah/${ayahNumber}/editions/quran-uthmani,en.sahih`
+  const url = `https://api.alquran.cloud/v1/ayah/${ayahNumber}/editions/quran-uthmani,ur.jalandhry`
   try {
     // Cache each ayah for 24h — the text never changes
     const res = await fetch(url, { next: { revalidate: 86400 } })
@@ -50,7 +51,7 @@ export async function getAyahWithTranslation(
     if (json.code !== 200 || !Array.isArray(json.data) || json.data.length < 2) {
       return null
     }
-    return { arabic: json.data[0], english: json.data[1] }
+    return { arabic: json.data[0], urdu: json.data[1] }
   } catch {
     return null
   }

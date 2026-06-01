@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Amiri } from "next/font/google";
+import { Plus_Jakarta_Sans, Amiri, Noto_Nastaliq_Urdu } from "next/font/google";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -12,6 +12,13 @@ const amiri = Amiri({
   variable: "--font-amiri",
   subsets: ["latin", "arabic"],
   weight: ["400", "700"],
+  display: "swap",
+});
+
+const nastaliq = Noto_Nastaliq_Urdu({
+  variable: "--font-nastaliq",
+  subsets: ["arabic"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
@@ -29,7 +36,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${jakarta.variable} ${amiri.variable} h-full antialiased`}
+      className={`${jakarta.variable} ${amiri.variable} ${nastaliq.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
