@@ -5,6 +5,7 @@ import { logoutAction } from './actions'
 import { PrayerCheckIn } from '@/components/PrayerCheckIn'
 import { StreakCard } from '@/components/StreakCard'
 import { FadeIn } from '@/components/FadeIn'
+import { InstallPrompt } from '@/components/InstallPrompt'
 import type { PrayerStatus } from '@/types/database'
 
 const PRAYERS = [
@@ -108,6 +109,8 @@ export default async function DashboardPage() {
         />
 
         <PrayerCheckIn prayers={prayerRows} />
+
+        <InstallPrompt />
 
         {prayerData && (
           <FadeIn delay={0.4}>
