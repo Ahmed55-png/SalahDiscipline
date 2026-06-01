@@ -73,10 +73,10 @@ export function InstallPrompt() {
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="font-bold text-emerald-deep dark:text-emerald-200 text-sm">
-                App ki tarah install karein
+                Install as an app
               </h3>
               <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
-                Home screen pe icon, full screen, notifications support.
+                Home screen icon, full screen, notifications support.
               </p>
               <div className="mt-3 flex gap-2">
                 <button
@@ -89,7 +89,7 @@ export function InstallPrompt() {
                   onClick={handleDismiss}
                   className="rounded-full px-3 py-1.5 text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
                 >
-                  Baad mein
+                  Later
                 </button>
               </div>
             </div>

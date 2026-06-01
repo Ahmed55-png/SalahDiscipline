@@ -53,7 +53,7 @@ export function StreakCard({ current, longest }: Props) {
 
         {!hasStreak && (
           <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-            Aaj 5 ki 5 namazein parho — streak start karo.
+            Pray all 5 prayers today to start your streak.
           </p>
         )}
       </div>

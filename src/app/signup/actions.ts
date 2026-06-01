@@ -14,13 +14,13 @@ export async function signupAction(
   const username = String(formData.get('username') ?? '').trim()
 
   if (!email || !password || !username) {
-    return { error: 'Sab fields zaroori hain' }
+    return { error: 'All fields are required' }
   }
   if (password.length < 6) {
-    return { error: 'Password kam se kam 6 characters ka ho' }
+    return { error: 'Password must be at least 6 characters' }
   }
   if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
-    return { error: 'Username 3-20 chars, sirf letters/numbers/underscore' }
+    return { error: 'Username: 3-20 chars, letters/numbers/underscore only' }
   }
 
   const supabase = await createClient()

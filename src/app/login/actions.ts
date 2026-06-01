@@ -13,7 +13,7 @@ export async function loginAction(
   const password = String(formData.get('password') ?? '')
 
   if (!email || !password) {
-    return { error: 'Email aur password dono zaroori hain' }
+    return { error: 'Email and password are both required' }
   }
 
   const supabase = await createClient()

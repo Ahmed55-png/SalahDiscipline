@@ -7,6 +7,13 @@ import { StreakCard } from '@/components/StreakCard'
 import { FadeIn } from '@/components/FadeIn'
 import { InstallPrompt } from '@/components/InstallPrompt'
 import { NotificationSetup } from '@/components/NotificationSetup'
+import { RotatingGreeting } from '@/components/RotatingGreeting'
+
+const DASHBOARD_GREETINGS = [
+  'Welcome back',
+  'Good to see you',
+  'Hello again',
+] as const
 import type { PrayerStatus } from '@/types/database'
 
 const PRAYERS = [
@@ -89,7 +96,10 @@ export default async function DashboardPage() {
             <h1 className="text-2xl font-bold text-emerald-deep dark:text-emerald-200 tracking-tight">
               {profile?.username ?? 'friend'}
             </h1>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+            <p className="text-xs text-emerald-deep/70 dark:text-emerald-300/70 font-medium">
+              <RotatingGreeting phrases={DASHBOARD_GREETINGS} />
+            </p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5 pt-0.5">
               <span className="inline-block w-1 h-1 rounded-full bg-gold" />
               {city}, {country}
             </p>

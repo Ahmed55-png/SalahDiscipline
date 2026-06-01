@@ -83,7 +83,7 @@ export function PrayerCheckIn({ prayers }: Props) {
               🎉 Maashallah — Today complete!
             </p>
             <p className="text-center text-xs text-emerald-deep/80 dark:text-gold-soft/90 mt-1">
-              Streak counted · Kal ki tayari karein
+              Streak counted · See you tomorrow
             </p>
           </motion.div>
         )}
@@ -98,7 +98,7 @@ export function PrayerCheckIn({ prayers }: Props) {
             className="mt-4 rounded-xl border border-red-400/40 bg-red-50 dark:bg-red-950/30 px-4 py-2 text-center"
           >
             <p className="text-xs text-red-700 dark:text-red-300">
-              Streak break — kal se naye sirey se shuru kar sakte hain.
+              Streak broken — start fresh tomorrow.
             </p>
           </motion.div>
         )}
@@ -182,7 +182,7 @@ export function PrayerCheckIn({ prayers }: Props) {
       </ul>
 
       <p className="mt-5 text-center text-[11px] text-zinc-500 dark:text-zinc-400 italic">
-        5/5 prayed = streak +1 · Koi missed = streak reset
+        5/5 prayed = streak +1 · Any missed = streak resets
       </p>
     </motion.section>
   )

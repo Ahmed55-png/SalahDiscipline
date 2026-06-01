@@ -4,14 +4,24 @@ import Link from 'next/link'
 import { useActionState } from 'react'
 import { signupAction, type SignupState } from './actions'
 import { AuthShell, AuthInput, AuthSubmit } from '@/components/AuthShell'
+import { RotatingGreeting } from '@/components/RotatingGreeting'
 
 const initialState: SignupState = { error: null }
+
+const SIGNUP_GREETINGS = [
+  'Get started',
+  'Hello there',
+  'Begin journey',
+] as const
 
 export default function SignupPage() {
   const [state, formAction, pending] = useActionState(signupAction, initialState)
 
   return (
-    <AuthShell title="Salam, Naye Bhai" subtitle="Apni discipline ka safar shuru karein">
+    <AuthShell
+      title={<RotatingGreeting phrases={SIGNUP_GREETINGS} />}
+      subtitle="Build your prayer discipline"
+    >
       <form action={formAction} className="space-y-4">
         <AuthInput
           id="username"
@@ -57,7 +67,7 @@ export default function SignupPage() {
       </form>
 
       <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
-        Pehle se account hai?{' '}
+        Already have an account?{' '}
         <Link
           href="/login"
           className="text-gold dark:text-gold-light font-semibold hover:underline transition-colors"

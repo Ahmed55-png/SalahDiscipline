@@ -55,9 +55,9 @@ export default async function Home() {
             Salah Discipline
           </h1>
           <p className="text-zinc-700 dark:text-zinc-300 text-lg leading-relaxed">
-            5 namazon ki discipline — apni{' '}
-            <span className="shimmer-gold font-semibold">streak</span> banao,
-            doston ke saath share karo.
+            Discipline of the 5 daily prayers — build your{' '}
+            <span className="shimmer-gold font-semibold">streak</span>, share
+            with friends.
           </p>
         </FadeIn>
 

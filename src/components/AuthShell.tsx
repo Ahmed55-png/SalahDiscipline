@@ -5,7 +5,7 @@ import { BismillahCrest } from './BismillahCrest'
 import { type ReactNode } from 'react'
 
 type Props = {
-  title: string
+  title: ReactNode
   subtitle: string
   children: ReactNode
 }

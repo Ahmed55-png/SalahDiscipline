@@ -4,14 +4,24 @@ import Link from 'next/link'
 import { useActionState } from 'react'
 import { loginAction, type LoginState } from './actions'
 import { AuthShell, AuthInput, AuthSubmit } from '@/components/AuthShell'
+import { RotatingGreeting } from '@/components/RotatingGreeting'
 
 const initialState: LoginState = { error: null }
+
+const LOGIN_GREETINGS = [
+  'Welcome back',
+  'Good to see you',
+  'Hello again',
+] as const
 
 export default function LoginPage() {
   const [state, formAction, pending] = useActionState(loginAction, initialState)
 
   return (
-    <AuthShell title="Wapis Khush Aamdeed" subtitle="Apni streak continue karein">
+    <AuthShell
+      title={<RotatingGreeting phrases={LOGIN_GREETINGS} />}
+      subtitle="Continue your prayer streak"
+    >
       <form action={formAction} className="space-y-4">
         <AuthInput
           id="email"
@@ -45,7 +55,7 @@ export default function LoginPage() {
       </form>
 
       <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
-        Account nahi hai?{' '}
+        Don&apos;t have an account?{' '}
         <Link
           href="/signup"
           className="text-gold dark:text-gold-light font-semibold hover:underline transition-colors"

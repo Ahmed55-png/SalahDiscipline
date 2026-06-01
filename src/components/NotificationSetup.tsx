@@ -28,7 +28,7 @@ export function NotificationSetup() {
       if (result === 'granted') {
         setMessage('✓ Notifications enabled')
       } else if (result === 'denied') {
-        setMessage('Permission denied. Browser settings se enable karein.')
+        setMessage('Permission denied. Enable from browser settings.')
       }
     } catch (e) {
       setMessage('Error: ' + (e instanceof Error ? e.message : 'unknown'))
@@ -43,16 +43,16 @@ export function NotificationSetup() {
     try {
       const reg = await navigator.serviceWorker.ready
       await reg.showNotification('Salah Discipline', {
-        body: 'Test notification — sab kuch kaam kar raha hai! 🌙',
+        body: 'Test notification — everything is working! 🌙',
         icon: '/icon',
         badge: '/icon',
         tag: 'test',
         data: { url: '/dashboard' },
       })
-      setMessage('Test bheji — notification appear honi chahiye.')
+      setMessage('Test sent — notification should appear shortly.')
     } catch (e) {
       setMessage(
-        'Service worker abhi ready nahi. Production build (Vercel) pe try karein. ' +
+        'Service worker not ready. Try on the production build (Vercel). ' +
           (e instanceof Error ? `(${e.message})` : '')
       )
     } finally {
@@ -68,7 +68,7 @@ export function NotificationSetup() {
         className="rounded-2xl border border-zinc-300 dark:border-zinc-700 bg-white/80 dark:bg-[#0F2A22]/70 backdrop-blur-xl p-4"
       >
         <p className="text-xs text-zinc-600 dark:text-zinc-400">
-          🔕 Aap ke browser mein notifications support nahi hain.
+          🔕 Notifications are not supported in this browser.
         </p>
       </motion.section>
     )
@@ -93,7 +93,7 @@ export function NotificationSetup() {
           {permission === 'default' && (
             <>
               <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
-                Har namaz se pehle phone/laptop pe reminder.
+                Get a reminder on your phone/laptop before each prayer.
               </p>
               <button
                 onClick={enable}
@@ -108,7 +108,7 @@ export function NotificationSetup() {
           {permission === 'granted' && (
             <>
               <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-0.5 font-medium">
-                ✓ Enabled — har waqt notify hoga
+                ✓ Enabled — you&apos;ll be notified
               </p>
               <button
                 onClick={sendTest}
@@ -123,8 +123,8 @@ export function NotificationSetup() {
           {permission === 'denied' && (
             <>
               <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">
-                Permission denied. Browser settings (🔒 icon URL bar mein) se
-                enable karein.
+                Permission denied. Enable from browser settings (🔒 icon in
+                the URL bar).
               </p>
             </>
           )}
