@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { getTimingsByCity } from '@/lib/api/aladhan'
+import { getAyahWithTranslation, randomAyahNumber } from '@/lib/api/quran'
 import { redirect } from 'next/navigation'
 import { logoutAction } from './actions'
 import { PrayerCheckIn } from '@/components/PrayerCheckIn'
@@ -8,6 +9,7 @@ import { FadeIn } from '@/components/FadeIn'
 import { InstallPrompt } from '@/components/InstallPrompt'
 import { NotificationSetup } from '@/components/NotificationSetup'
 import { RotatingGreeting } from '@/components/RotatingGreeting'
+import { DailyAyah } from '@/components/DailyAyah'
 
 const DASHBOARD_GREETINGS = [
   'Welcome back',
@@ -40,7 +42,8 @@ export default async function DashboardPage() {
 
   if (!user) redirect('/login')
 
-  const [{ data: profile }, { data: streak }, { data: today }] =
+  const ayahNumber = randomAyahNumber()
+  const [{ data: profile }, { data: streak }, { data: today }, ayah] =
     await Promise.all([
       supabase
         .from('profiles')
@@ -58,6 +61,7 @@ export default async function DashboardPage() {
         .eq('user_id', user.id)
         .eq('prayer_date', todayIso())
         .maybeSingle(),
+      getAyahWithTranslation(ayahNumber),
     ])
 
   const city = profile?.city ?? 'Karachi'
@@ -113,6 +117,8 @@ export default async function DashboardPage() {
             </button>
           </form>
         </FadeIn>
+
+        {ayah && <DailyAyah ayah={ayah} />}
 
         <StreakCard
           current={streak?.current_streak ?? 0}
