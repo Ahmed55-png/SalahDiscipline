@@ -14,6 +14,8 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ['lifestyle', 'productivity', 'social'],
     lang: 'en',
     dir: 'ltr',
+    prefer_related_applications: false,
+    related_applications: [],
     icons: [
       {
         src: '/icon',
