@@ -1,20 +1,24 @@
-name: Hourly notify (ayah + prayer reminders)
+name: Prayer notify (every 5 minutes)
 
-# Hobby Vercel plan only allows ONE cron per day, so we drive the
-# hourly schedule from GitHub Actions instead. The workflow simply
-# pings our /api/cron/notify endpoint with the shared CRON_SECRET.
+# We can't run a Vercel cron more than once a day on the Hobby plan,
+# so the actual prayer reminder schedule lives here. GitHub Actions
+# schedules drift a bit but are accurate enough for ±5 min prayer
+# windows.
 #
-# GitHub Actions is free for public repos (and 2,000 min/month for
-# private). A single curl takes <5s, so 24×30 = 720 runs/month is
-# well under any limit.
+# Free for public repos; ~288 runs/day × ~5s each is well under the
+# 2000 min/month private-repo budget too.
 
 on:
   schedule:
-    # At minute 0 of every hour, UTC. GitHub schedules are best-effort
-    # and may drift by a few minutes during low load — that's fine for
-    # prayer reminders, which we deliver within the matching hour.
-    - cron: '0 * * * *'
-  workflow_dispatch: {} # allow manual trigger from the Actions tab
+    - cron: '*/5 * * * *'
+  workflow_dispatch: {}
+
+# Concurrency: never overlap runs — if a previous run is somehow still
+# going when the next fires, the new one waits (and skip-stale could
+# be added later).
+concurrency:
+  group: prayer-notify
+  cancel-in-progress: false
 
 jobs:
   ping:
@@ -23,7 +27,8 @@ jobs:
     steps:
       - name: Hit Vercel cron endpoint
         run: |
-          curl --fail --silent --show-error \
+          response=$(curl --fail --silent --show-error \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "User-Agent: GitHubActions-Cron" \
-            "https://salah-discipline-vvii.vercel.app/api/cron/notify"
+            "https://salah-discipline-vvii.vercel.app/api/cron/notify")
+          echo "Response: $response"
