@@ -8,10 +8,17 @@ import { useLanguage } from './LanguageProvider'
 type Props = {
   currentLabel: string | null
   hasCoords: boolean
+  latitude?: number | null
+  longitude?: number | null
 }
 
-export function LocationSetup({ currentLabel, hasCoords }: Props) {
-  const { t, isUrdu } = useLanguage()
+export function LocationSetup({
+  currentLabel,
+  hasCoords,
+  latitude,
+  longitude,
+}: Props) {
+  const { isUrdu } = useLanguage()
   const urduStyle = isUrdu ? { fontFamily: 'var(--font-nastaliq)' } : undefined
   const [pending, startTransition] = useTransition()
   const [message, setMessage] = useState<string | null>(null)
@@ -31,11 +38,14 @@ export function LocationSetup({ currentLabel, hasCoords }: Props) {
       (pos) => {
         const lat = pos.coords.latitude
         const lon = pos.coords.longitude
+        const accuracy = pos.coords.accuracy // metres
         startTransition(async () => {
           const result = await saveLocationAction({ latitude: lat, longitude: lon })
           if (result.ok) {
             setMessage(
-              result.label ? `Location set: ${result.label}` : 'Location saved.'
+              result.label
+                ? `Saved: ${result.label} (±${Math.round(accuracy)}m)`
+                : `Saved (±${Math.round(accuracy)}m)`
             )
           } else {
             setError(result.error ?? 'Failed to save location.')
@@ -53,8 +63,22 @@ export function LocationSetup({ currentLabel, hasCoords }: Props) {
           setError('Could not get location.')
         }
       },
-      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 60_000 }
+      // Always fetch fresh, allow up to 20s for a GPS fix
+      { enableHighAccuracy: true, timeout: 20_000, maximumAge: 0 }
     )
+  }
+
+  const clearLocation = () => {
+    setMessage(null)
+    setError(null)
+    startTransition(async () => {
+      const result = await saveLocationAction({ latitude: null, longitude: null })
+      if (result.ok) {
+        setMessage('Location cleared. Using city defaults.')
+      } else {
+        setError(result.error ?? 'Failed to clear.')
+      }
+    })
   }
 
   if (unsupported) {
@@ -85,13 +109,21 @@ export function LocationSetup({ currentLabel, hasCoords }: Props) {
           >
             {isUrdu ? 'مقام' : 'Location'}
           </h3>
-          {hasCoords && currentLabel ? (
-            <p
-              className="text-xs text-zinc-700 dark:text-zinc-300 mt-0.5 break-words"
-              style={urduStyle}
-            >
-              {currentLabel}
-            </p>
+
+          {hasCoords ? (
+            <>
+              <p
+                className="text-xs text-zinc-700 dark:text-zinc-300 mt-0.5 break-words"
+                style={urduStyle}
+              >
+                {currentLabel}
+              </p>
+              {latitude != null && longitude != null && (
+                <p className="text-[10px] font-mono text-zinc-500 dark:text-zinc-400 mt-0.5 tabular-nums">
+                  {latitude.toFixed(4)}, {longitude.toFixed(4)}
+                </p>
+              )}
+            </>
           ) : (
             <p
               className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5"
@@ -99,28 +131,49 @@ export function LocationSetup({ currentLabel, hasCoords }: Props) {
             >
               {isUrdu
                 ? 'دقیق نماز اوقات کے لیے اپنا مقام شیئر کریں۔'
-                : 'Share your location for street-accurate prayer times.'}
+                : 'Share your location for accurate prayer times.'}
             </p>
           )}
 
-          <button
-            type="button"
-            onClick={requestLocation}
-            disabled={pending}
-            className="mt-2.5 rounded-full bg-emerald-brand text-cream px-4 py-1.5 text-xs font-semibold hover:scale-[1.03] active:scale-[0.97] transition-transform glow-emerald disabled:opacity-50"
+          <p
+            className="text-[10px] text-amber-700 dark:text-amber-300/80 mt-1.5 italic leading-snug"
+            style={urduStyle}
           >
-            {pending
-              ? isUrdu
-                ? 'محفوظ ہو رہا ہے…'
-                : 'Saving…'
-              : hasCoords
+            {isUrdu
+              ? '💡 ڈیسک ٹاپ پر مقام ISP کے مطابق ہوتا ہے۔ موبائل سے GPS لینے پر زیادہ درست آتا ہے۔'
+              : '💡 Desktop uses IP/WiFi (often off by miles). Open the app on your phone for GPS-accurate location.'}
+          </p>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={requestLocation}
+              disabled={pending}
+              className="rounded-full bg-emerald-brand text-cream px-4 py-1.5 text-xs font-semibold hover:scale-[1.03] active:scale-[0.97] transition-transform glow-emerald disabled:opacity-50"
+            >
+              {pending
                 ? isUrdu
-                  ? 'مقام اپ ڈیٹ کریں'
-                  : 'Update Location'
-                : isUrdu
-                  ? 'مقام فعال کریں'
-                  : 'Enable Location'}
-          </button>
+                  ? 'محفوظ ہو رہا ہے…'
+                  : 'Saving…'
+                : hasCoords
+                  ? isUrdu
+                    ? 'دوبارہ حاصل کریں'
+                    : 'Re-detect'
+                  : isUrdu
+                    ? 'مقام فعال کریں'
+                    : 'Enable Location'}
+            </button>
+            {hasCoords && (
+              <button
+                type="button"
+                onClick={clearLocation}
+                disabled={pending}
+                className="rounded-full border-2 border-red-400/40 text-red-600 dark:text-red-400 px-4 py-1.5 text-xs font-semibold hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors disabled:opacity-50"
+              >
+                {isUrdu ? 'مقام صاف کریں' : 'Clear'}
+              </button>
+            )}
+          </div>
 
           {message && (
             <p className="mt-2 text-[11px] text-emerald-700 dark:text-emerald-300">

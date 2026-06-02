@@ -18,6 +18,8 @@ type Props = {
   longestStreak: number
   locationLabel: string | null
   hasCoords: boolean
+  latitude: number | null
+  longitude: number | null
 }
 
 export function ProfileDrawer({
@@ -31,6 +33,8 @@ export function ProfileDrawer({
   longestStreak,
   locationLabel,
   hasCoords,
+  latitude,
+  longitude,
 }: Props) {
   const { t, isUrdu } = useLanguage()
   const initial = (username[0] ?? '?').toUpperCase()
@@ -141,6 +145,8 @@ export function ProfileDrawer({
               <LocationSetup
                 currentLabel={locationLabel ?? `${city}, ${country}`}
                 hasCoords={hasCoords}
+                latitude={latitude}
+                longitude={longitude}
               />
 
               {/* Notifications */}

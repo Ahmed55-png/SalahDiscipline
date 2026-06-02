@@ -13,6 +13,8 @@ type Props = {
   longestStreak: number
   locationLabel: string | null
   hasCoords: boolean
+  latitude: number | null
+  longitude: number | null
 }
 
 export function ProfileButton(props: Props) {

@@ -14,6 +14,8 @@ type Props = {
   longestStreak: number
   locationLabel: string | null
   hasCoords: boolean
+  latitude: number | null
+  longitude: number | null
 }
 
 const GREETING_KEYS = [

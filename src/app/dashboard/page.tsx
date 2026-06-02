@@ -154,6 +154,8 @@ export default async function DashboardPage() {
           longestStreak={streak?.longest_streak ?? 0}
           locationLabel={locationLabel}
           hasCoords={hasCoords}
+          latitude={lat}
+          longitude={lon}
         />
 
         {ayah && <DailyAyah ayah={ayah} />}

@@ -126,10 +126,27 @@ export async function markPrayerAction(prayer: PrayerCol, status: Status) {
  * coordinates are never sent through a third-party from the browser.
  */
 export async function saveLocationAction(input: {
-  latitude: number
-  longitude: number
+  latitude: number | null
+  longitude: number | null
 }): Promise<{ ok: boolean; label?: string; error?: string }> {
   const { latitude, longitude } = input
+
+  // Clear path: pass null/null to remove the saved location
+  if (latitude === null && longitude === null) {
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) return { ok: false, error: 'Not authenticated' }
+    const { error } = await supabase
+      .from('profiles')
+      .update({ latitude: null, longitude: null, location_label: null })
+      .eq('id', user.id)
+    if (error) return { ok: false, error: error.message }
+    revalidatePath('/dashboard')
+    return { ok: true }
+  }
+
   if (
     typeof latitude !== 'number' ||
     typeof longitude !== 'number' ||
