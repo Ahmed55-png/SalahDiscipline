@@ -6,6 +6,7 @@ import { PrayerCheckIn } from '@/components/PrayerCheckIn'
 import { FadeIn } from '@/components/FadeIn'
 import { InstallPrompt } from '@/components/InstallPrompt'
 import { DailyAyah } from '@/components/DailyAyah'
+import { getTimingsByCoordinates } from '@/lib/api/aladhan'
 import { LastWeekStrip, type WeekDay } from '@/components/LastWeekStrip'
 import { DashboardHeader } from '@/components/DashboardHeader'
 import {
@@ -58,7 +59,9 @@ export default async function DashboardPage() {
   ] = await Promise.all([
     supabase
       .from('profiles')
-      .select('username, city, country, calculation_method')
+      .select(
+        'username, city, country, calculation_method, latitude, longitude, location_label'
+      )
       .eq('id', user.id)
       .single(),
     supabase
@@ -106,10 +109,21 @@ export default async function DashboardPage() {
   const city = profile?.city ?? 'Karachi'
   const country = profile?.country ?? 'Pakistan'
   const method = profile?.calculation_method ?? 1
+  const lat = (profile as { latitude?: number | null } | null)?.latitude ?? null
+  const lon =
+    (profile as { longitude?: number | null } | null)?.longitude ?? null
+  const locationLabel =
+    (profile as { location_label?: string | null } | null)?.location_label ??
+    null
+  const hasCoords = lat != null && lon != null
 
   let prayerData: Awaited<ReturnType<typeof getTimingsByCity>> | null = null
   try {
-    prayerData = await getTimingsByCity(city, country, method)
+    if (hasCoords) {
+      prayerData = await getTimingsByCoordinates(lat!, lon!, method)
+    } else {
+      prayerData = await getTimingsByCity(city, country, method)
+    }
   } catch {
     // ignore
   }
@@ -138,6 +152,8 @@ export default async function DashboardPage() {
           country={country}
           currentStreak={streak?.current_streak ?? 0}
           longestStreak={streak?.longest_streak ?? 0}
+          locationLabel={locationLabel}
+          hasCoords={hasCoords}
         />
 
         {ayah && <DailyAyah ayah={ayah} />}

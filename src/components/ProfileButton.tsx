@@ -11,6 +11,8 @@ type Props = {
   country: string
   currentStreak: number
   longestStreak: number
+  locationLabel: string | null
+  hasCoords: boolean
 }
 
 export function ProfileButton(props: Props) {

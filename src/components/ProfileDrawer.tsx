@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { logoutAction } from '@/app/dashboard/actions'
 import { useLanguage } from './LanguageProvider'
 import { NotificationSetup } from './NotificationSetup'
+import { LocationSetup } from './LocationSetup'
 
 type Props = {
   open: boolean
@@ -15,6 +16,8 @@ type Props = {
   country: string
   currentStreak: number
   longestStreak: number
+  locationLabel: string | null
+  hasCoords: boolean
 }
 
 export function ProfileDrawer({
@@ -26,6 +29,8 @@ export function ProfileDrawer({
   country,
   currentStreak,
   longestStreak,
+  locationLabel,
+  hasCoords,
 }: Props) {
   const { t, isUrdu } = useLanguage()
   const initial = (username[0] ?? '?').toUpperCase()
@@ -132,17 +137,11 @@ export function ProfileDrawer({
                 </div>
               </div>
 
-              {/* Info rows */}
-              <div className="rounded-xl border border-gold/30 bg-white/85 dark:bg-[#0F2A22]/85 backdrop-blur-xl divide-y divide-gold/15">
-                <div className="px-4 py-3 flex items-center justify-between">
-                  <span className="text-xs uppercase tracking-widest font-semibold text-emerald-deep/80 dark:text-emerald-300/80">
-                    {t('profile.location')}
-                  </span>
-                  <span className="text-sm text-zinc-700 dark:text-zinc-200">
-                    {city}, {country}
-                  </span>
-                </div>
-              </div>
+              {/* Location (GPS) */}
+              <LocationSetup
+                currentLabel={locationLabel ?? `${city}, ${country}`}
+                hasCoords={hasCoords}
+              />
 
               {/* Notifications */}
               <NotificationSetup />

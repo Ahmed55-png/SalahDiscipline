@@ -1,13 +1,16 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
+import { useOptimistic, useTransition } from 'react'
 import { markPrayerAction } from '@/app/dashboard/actions'
 import type { PrayerStatus } from '@/types/database'
 import { useLanguage } from './LanguageProvider'
 import { AnimatedNumber } from './AnimatedNumber'
 
+type PrayerKey = 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha'
+
 type PrayerRow = {
-  key: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha'
+  key: PrayerKey
   label: 'Fajr' | 'Dhuhr' | 'Asr' | 'Maghrib' | 'Isha'
   arabic: string
   time: string
@@ -32,14 +35,35 @@ const STATUS_BORDER: Record<PrayerStatus, string> = {
 export function PrayerCheckIn({ prayers, currentStreak, longestStreak }: Props) {
   const { t, isUrdu } = useLanguage()
   const urduStyle = isUrdu ? { fontFamily: 'var(--font-nastaliq)' } : undefined
-  const allPrayed = prayers.every((p) => p.status === 'prayed')
-  const anyMissed = prayers.some((p) => p.status === 'missed')
+
+  // Optimistic: while the server is processing the mark, render as if
+  // it has already happened. The server's revalidatePath will eventually
+  // refresh `prayers` and the optimistic value gets reconciled.
+  const [optimisticPrayers, applyOptimistic] = useOptimistic(
+    prayers,
+    (current, update: { key: PrayerKey; status: PrayerStatus }) =>
+      current.map((p) =>
+        p.key === update.key ? { ...p, status: update.status } : p
+      )
+  )
+
+  const [, startTransition] = useTransition()
 
   const STATUS_LABEL: Record<PrayerStatus, string> = {
     prayed: t('status.prayed'),
     missed: t('status.missed'),
     pending: '—',
   }
+
+  const handleMark = (key: PrayerKey, nextStatus: PrayerStatus) => {
+    startTransition(async () => {
+      applyOptimistic({ key, status: nextStatus })
+      await markPrayerAction(key, nextStatus)
+    })
+  }
+
+  const allPrayed = optimisticPrayers.every((p) => p.status === 'prayed')
+  const anyMissed = optimisticPrayers.some((p) => p.status === 'missed')
 
   return (
     <motion.section
@@ -107,7 +131,6 @@ export function PrayerCheckIn({ prayers, currentStreak, longestStreak }: Props) 
             transition={{ type: 'spring', stiffness: 250, damping: 22 }}
             className="relative mt-4 overflow-hidden rounded-xl border border-gold/50 bg-gradient-to-br from-gold-soft/60 via-gold-soft/40 to-emerald-50 dark:from-gold/20 dark:via-emerald-deep/40 dark:to-emerald-deep/60 px-5 py-4"
           >
-            {/* Sparkles */}
             <span className="absolute top-2 right-3 text-base sparkle" aria-hidden>
               ✨
             </span>
@@ -163,7 +186,7 @@ export function PrayerCheckIn({ prayers, currentStreak, longestStreak }: Props) 
       </AnimatePresence>
 
       <ul className="mt-5 space-y-2.5">
-        {prayers.map((p, idx) => (
+        {optimisticPrayers.map((p, idx) => (
           <motion.li
             key={p.key}
             initial={{ opacity: 0, x: -8 }}
@@ -192,48 +215,38 @@ export function PrayerCheckIn({ prayers, currentStreak, longestStreak }: Props) 
               <span className="text-[10px] uppercase tracking-wider text-zinc-400 hidden sm:inline">
                 {STATUS_LABEL[p.status]}
               </span>
-              <form action={markPrayerAction}>
-                <input type="hidden" name="prayer" value={p.key} />
-                <input
-                  type="hidden"
-                  name="status"
-                  value={p.status === 'prayed' ? 'pending' : 'prayed'}
-                />
-                <motion.button
-                  whileTap={{ scale: 0.85 }}
-                  whileHover={{ scale: 1.1 }}
-                  type="submit"
-                  aria-label={`Mark ${p.label} prayed`}
-                  className={`relative w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-200 ${
-                    p.status === 'prayed'
-                      ? 'bg-emerald-brand text-white shadow-md shadow-emerald-brand/40'
-                      : 'bg-white dark:bg-[#0A1F1A] border-2 border-emerald-light/50 text-emerald-brand dark:text-emerald-light hover:border-emerald-light'
-                  }`}
-                >
-                  ✓
-                </motion.button>
-              </form>
-              <form action={markPrayerAction}>
-                <input type="hidden" name="prayer" value={p.key} />
-                <input
-                  type="hidden"
-                  name="status"
-                  value={p.status === 'missed' ? 'pending' : 'missed'}
-                />
-                <motion.button
-                  whileTap={{ scale: 0.85 }}
-                  whileHover={{ scale: 1.1 }}
-                  type="submit"
-                  aria-label={`Mark ${p.label} missed`}
-                  className={`relative w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-200 ${
-                    p.status === 'missed'
-                      ? 'bg-red-600 text-white shadow-md shadow-red-600/40'
-                      : 'bg-white dark:bg-[#0A1F1A] border-2 border-red-400/50 text-red-500 dark:text-red-400 hover:border-red-400'
-                  }`}
-                >
-                  ✗
-                </motion.button>
-              </form>
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.85 }}
+                whileHover={{ scale: 1.1 }}
+                onClick={() =>
+                  handleMark(p.key, p.status === 'prayed' ? 'pending' : 'prayed')
+                }
+                aria-label={`Mark ${p.label} prayed`}
+                className={`relative w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-200 ${
+                  p.status === 'prayed'
+                    ? 'bg-emerald-brand text-white shadow-md shadow-emerald-brand/40'
+                    : 'bg-white dark:bg-[#0A1F1A] border-2 border-emerald-light/50 text-emerald-brand dark:text-emerald-light hover:border-emerald-light'
+                }`}
+              >
+                ✓
+              </motion.button>
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.85 }}
+                whileHover={{ scale: 1.1 }}
+                onClick={() =>
+                  handleMark(p.key, p.status === 'missed' ? 'pending' : 'missed')
+                }
+                aria-label={`Mark ${p.label} missed`}
+                className={`relative w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-200 ${
+                  p.status === 'missed'
+                    ? 'bg-red-600 text-white shadow-md shadow-red-600/40'
+                    : 'bg-white dark:bg-[#0A1F1A] border-2 border-red-400/50 text-red-500 dark:text-red-400 hover:border-red-400'
+                }`}
+              >
+                ✗
+              </motion.button>
             </div>
           </motion.li>
         ))}

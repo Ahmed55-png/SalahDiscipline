@@ -12,6 +12,8 @@ type Props = {
   country: string
   currentStreak: number
   longestStreak: number
+  locationLabel: string | null
+  hasCoords: boolean
 }
 
 const GREETING_KEYS = [
@@ -51,9 +53,13 @@ export function DashboardHeader(props: Props) {
         >
           {t(greetingKey)}
         </p>
-        <p className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5 pt-0.5">
-          <span className="inline-block w-1 h-1 rounded-full bg-gold" />
-          {props.city}, {props.country}
+        <p className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5 pt-0.5 truncate">
+          <span className="inline-block w-1 h-1 rounded-full bg-gold shrink-0" />
+          <span className="truncate">
+            {props.hasCoords && props.locationLabel
+              ? props.locationLabel
+              : `${props.city}, ${props.country}`}
+          </span>
         </p>
       </div>
 
