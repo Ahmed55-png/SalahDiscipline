@@ -62,14 +62,7 @@ export function SubscribeBanner() {
 
       const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
       if (!vapidKey) {
-        const debugLen = (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? '').length
-        setError(
-          `Push not configured (VAPID key missing). debug len=${debugLen} keys=${Object.keys(
-            (typeof process !== 'undefined' && process.env) || {}
-          )
-            .filter((k) => k.startsWith('NEXT_PUBLIC_'))
-            .join(',')}`
-        )
+        setError('Push not configured (VAPID key missing).')
         setBusy(false)
         return
       }
