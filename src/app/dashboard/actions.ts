@@ -4,6 +4,102 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 
+// =====================================================================
+// Reverse geocoding helpers
+// =====================================================================
+
+type GeocodeResult = {
+  label: string | null
+  city: string | null
+  country: string | null
+}
+
+async function geocodeMapbox(
+  lat: number,
+  lon: number,
+  token: string
+): Promise<GeocodeResult | null> {
+  try {
+    const url =
+      `https://api.mapbox.com/geocoding/v5/mapbox.places/${lon},${lat}.json` +
+      `?access_token=${token}&types=address,neighborhood,locality,place&language=en&limit=1`
+    const res = await fetch(url, { next: { revalidate: 3600 } })
+    if (!res.ok) return null
+    const data = (await res.json()) as {
+      features?: Array<{
+        place_name?: string
+        text?: string
+        context?: Array<{ id?: string; text?: string }>
+      }>
+    }
+    const f = data.features?.[0]
+    if (!f) return null
+    const findCtx = (prefix: string) =>
+      f.context?.find((c) => c.id?.startsWith(prefix))?.text ?? null
+    return {
+      label: f.place_name ?? null,
+      city: findCtx('place') ?? findCtx('locality') ?? null,
+      country: findCtx('country') ?? null,
+    }
+  } catch {
+    return null
+  }
+}
+
+async function geocodeNominatim(
+  lat: number,
+  lon: number
+): Promise<GeocodeResult | null> {
+  try {
+    const url =
+      `https://nominatim.openstreetmap.org/reverse` +
+      `?lat=${lat}&lon=${lon}&format=json&accept-language=en` +
+      `&zoom=18&addressdetails=1`
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'SalahDiscipline/1.0 (https://salah-discipline.vercel.app)',
+      },
+      next: { revalidate: 3600 },
+    })
+    if (!res.ok) return null
+    const data = (await res.json()) as {
+      address?: Record<string, string | undefined>
+      display_name?: string
+    }
+    const a = data.address ?? {}
+    const street =
+      a.house_number && a.road
+        ? `${a.house_number} ${a.road}`
+        : (a.road ?? null)
+    const area =
+      a.neighbourhood ?? a.quarter ?? a.suburb ?? a.residential ?? null
+    const district = a.city_district ?? a.county ?? null
+    const city = a.city ?? a.town ?? a.village ?? a.municipality ?? null
+    const country = a.country ?? null
+    const parts = [street, area, district, city, country].filter(
+      (v, i, arr) => v && arr.indexOf(v) === i
+    ) as string[]
+    return {
+      label: parts.length ? parts.join(', ') : (data.display_name ?? null),
+      city,
+      country,
+    }
+  } catch {
+    return null
+  }
+}
+
+async function reverseGeocode(lat: number, lon: number): Promise<GeocodeResult> {
+  const mapboxToken = process.env.MAPBOX_ACCESS_TOKEN
+  if (mapboxToken) {
+    const r = await geocodeMapbox(lat, lon, mapboxToken)
+    if (r && r.label) return r
+  }
+  const r = await geocodeNominatim(lat, lon)
+  if (r) return r
+  return { label: null, city: null, country: null }
+}
+
 export async function logoutAction() {
   const supabase = await createClient()
   await supabase.auth.signOut()
@@ -167,44 +263,10 @@ export async function saveLocationAction(input: {
     } = await supabase.auth.getUser()
     if (!user) return { ok: false, error: 'Not authenticated' }
 
-    // Reverse geocode (best effort)
-    let label: string | null = null
-    let city: string | null = null
-    let country: string | null = null
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=en&zoom=14`,
-        {
-          headers: {
-            'User-Agent': 'SalahDiscipline/1.0 (https://salah-discipline.vercel.app)',
-          },
-          // Cache identical coords for an hour
-          next: { revalidate: 3600 },
-        }
-      )
-      if (res.ok) {
-        const data = (await res.json()) as {
-          address?: {
-            suburb?: string
-            neighbourhood?: string
-            city?: string
-            town?: string
-            village?: string
-            state?: string
-            country?: string
-          }
-          display_name?: string
-        }
-        const a = data.address ?? {}
-        city = a.city ?? a.town ?? a.village ?? null
-        country = a.country ?? null
-        const street = a.suburb ?? a.neighbourhood ?? null
-        const parts = [street, city, country].filter(Boolean) as string[]
-        label = parts.length > 0 ? parts.join(', ') : (data.display_name ?? null)
-      }
-    } catch {
-      // Geocoding is best-effort; we still save coordinates.
-    }
+    // Reverse geocode: prefer Mapbox (street-accurate, like WhatsApp/Snapchat)
+    // when MAPBOX_ACCESS_TOKEN env var is configured, otherwise fall back to
+    // Nominatim (OpenStreetMap, free, less detail in Pakistan).
+    const { label, city, country } = await reverseGeocode(latitude, longitude)
 
     const update: {
       latitude: number

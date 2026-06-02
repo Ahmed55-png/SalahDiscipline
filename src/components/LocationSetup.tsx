@@ -119,9 +119,19 @@ export function LocationSetup({
                 {currentLabel}
               </p>
               {latitude != null && longitude != null && (
-                <p className="text-[10px] font-mono text-zinc-500 dark:text-zinc-400 mt-0.5 tabular-nums">
-                  {latitude.toFixed(4)}, {longitude.toFixed(4)}
-                </p>
+                <div className="mt-1 flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] font-mono text-zinc-500 dark:text-zinc-400 tabular-nums">
+                    {latitude.toFixed(5)}, {longitude.toFixed(5)}
+                  </span>
+                  <a
+                    href={`https://www.google.com/maps?q=${latitude},${longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] text-emerald-700 dark:text-emerald-300 underline hover:text-emerald-800 dark:hover:text-emerald-200"
+                  >
+                    Verify on Google Maps ↗
+                  </a>
+                </div>
               )}
             </>
           ) : (
@@ -140,8 +150,8 @@ export function LocationSetup({
             style={urduStyle}
           >
             {isUrdu
-              ? '💡 ڈیسک ٹاپ پر مقام ISP کے مطابق ہوتا ہے۔ موبائل سے GPS لینے پر زیادہ درست آتا ہے۔'
-              : '💡 Desktop uses IP/WiFi (often off by miles). Open the app on your phone for GPS-accurate location.'}
+              ? '💡 موبائل پر: Settings → Location → "Use precise location" آن کریں۔ پانچ سیکنڈ انتظار کریں تاکہ GPS لاک ہو جائے۔'
+              : '💡 On mobile: Settings → Location → enable "Use precise location". Then wait 5s for GPS to lock before tapping Re-detect.'}
           </p>
 
           <div className="mt-3 flex flex-wrap gap-2">
