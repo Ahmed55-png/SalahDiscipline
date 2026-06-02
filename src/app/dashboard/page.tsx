@@ -193,6 +193,9 @@ export default async function DashboardPage() {
                 {prayerData.data.date.hijri.month.en}{' '}
                 {prayerData.data.date.hijri.year} هـ
               </p>
+              <p className="text-[10px] uppercase tracking-widest text-emerald-deep/40 dark:text-emerald-300/40 pt-2">
+                v2 · with notifications & azan
+              </p>
             </div>
           </FadeIn>
         )}
