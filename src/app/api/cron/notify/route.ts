@@ -14,6 +14,11 @@ import {
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
+// How close to a prayer time counts as "now". GH Actions runs every
+// 5 min, but the actual fire can drift ±2 min, so ±3 min covers it
+// while staying tight enough that adjacent cron runs don't both fire.
+const PRAYER_WINDOW_MIN = 3
+
 type Profile = {
   id: string
   username: string | null
@@ -47,6 +52,17 @@ function parseHHMM(time: string | undefined): { h: number; m: number } | null {
   return { h: Number(m[1]), m: Number(m[2]) }
 }
 
+function minutesBetween(a: { h: number; m: number }, b: { h: number; m: number }): number {
+  return Math.abs(a.h * 60 + a.m - (b.h * 60 + b.m))
+}
+
+function todayDateString(now: Date): string {
+  const yyyy = now.getFullYear()
+  const mm = String(now.getMonth() + 1).padStart(2, '0')
+  const dd = String(now.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}
+
 async function sendPush(sub: Subscription, payload: object) {
   try {
     await webpush.sendNotification(
@@ -59,7 +75,6 @@ async function sendPush(sub: Subscription, payload: object) {
     )
     return { ok: true as const }
   } catch (e: unknown) {
-    // 404/410 => subscription is gone, caller should delete it
     const status =
       typeof e === 'object' && e !== null && 'statusCode' in e
         ? (e as { statusCode: number }).statusCode
@@ -69,7 +84,6 @@ async function sendPush(sub: Subscription, payload: object) {
 }
 
 export async function GET(req: NextRequest) {
-  // Verify Vercel cron signature OR our own CRON_SECRET
   const cronSecret = process.env.CRON_SECRET
   const authHeader = req.headers.get('authorization')
   if (
@@ -81,10 +95,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (!configureVapid()) {
-    return NextResponse.json(
-      { error: 'VAPID not configured' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'VAPID not configured' }, { status: 500 })
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -95,27 +106,37 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     )
   }
-  // Service-role client bypasses RLS so the cron can read all profiles + subs
   const admin = createSupabaseClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   })
 
   const now = new Date()
-  const curHour = now.getHours()
+  const curHM = { h: now.getHours(), m: now.getMinutes() }
+  const dateStr = todayDateString(now)
+  const isTopOfHour = now.getMinutes() < 5 // Send hourly ayah only near :00
 
-  // 1) Hourly ayah: send to everyone, every run
-  const ayahNum = randomAyahNumber()
-  const ayah = await getAyahWithTranslation(ayahNum)
-  const ayahPayload = ayah
-    ? {
+  // Build hourly ayah payload (only at top of hour)
+  let ayahPayload: {
+    title: string
+    body: string
+    url: string
+    tag: string
+  } | null = null
+  if (isTopOfHour) {
+    const ayahNum = randomAyahNumber()
+    const ayah = await getAyahWithTranslation(ayahNum)
+    if (ayah) {
+      ayahPayload = {
         title: `Surah ${ayah.arabic.surah.englishName} · ${ayah.arabic.surah.number}:${ayah.arabic.numberInSurah}`,
         body: ayah.urdu.text,
         url: '/dashboard',
+        // Same tag for the whole hour, so duplicate sends (if any) replace
+        tag: `ayah-${dateStr}-${curHM.h}`,
       }
-    : null
+    }
+  }
 
-  // 2) Prayer reminders: only for prayers whose hour matches the current hour
-  // (Hobby Vercel cron can only run hourly, so this is the best granularity)
+  // Fetch all subscriptions
   const { data: subs, error: subsErr } = await admin
     .from('push_subscriptions')
     .select('user_id, endpoint, p256dh, auth')
@@ -126,7 +147,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ sent: 0, reason: 'no subscribers' })
   }
 
-  // Group subscriptions by user
   const subsByUser = new Map<string, Subscription[]>()
   for (const s of subs as Subscription[]) {
     const arr = subsByUser.get(s.user_id) ?? []
@@ -134,27 +154,29 @@ export async function GET(req: NextRequest) {
     subsByUser.set(s.user_id, arr)
   }
 
-  // Fetch profiles for all subscribed users
   const userIds = Array.from(subsByUser.keys())
   const { data: profiles } = await admin
     .from('profiles')
-    .select('id, username, city, country, calculation_method, latitude, longitude')
+    .select(
+      'id, username, city, country, calculation_method, latitude, longitude'
+    )
     .in('id', userIds)
-
   const profileById = new Map<string, Profile>()
   for (const p of (profiles as Profile[]) ?? []) {
     profileById.set(p.id, p)
   }
 
-  let totalSent = 0
+  let prayerSends = 0
+  let ayahSends = 0
   let totalGone = 0
   const goneEndpoints: string[] = []
+  const debug: Array<Record<string, unknown>> = []
 
   for (const [userId, userSubs] of subsByUser.entries()) {
     const profile = profileById.get(userId)
 
-    // Determine if any prayer falls in this hour for this user
-    let prayerLabel: string | null = null
+    // Detect which prayer (if any) is within the window
+    let prayerMatch: { label: string; time: string } | null = null
     if (profile) {
       const method = profile.calculation_method ?? 1
       let timings: AladhanResponse | null = null
@@ -172,49 +194,66 @@ export async function GET(req: NextRequest) {
         timings = null
       }
       if (timings) {
-        const map: Array<[string, string]> = [
+        const prayers: Array<[string, string]> = [
           ['Fajr', timings.data.timings.Fajr],
           ['Dhuhr', timings.data.timings.Dhuhr],
           ['Asr', timings.data.timings.Asr],
           ['Maghrib', timings.data.timings.Maghrib],
           ['Isha', timings.data.timings.Isha],
         ]
-        for (const [label, time] of map) {
+        for (const [label, time] of prayers) {
           const hm = parseHHMM(time)
-          if (hm && hm.h === curHour) {
-            prayerLabel = label
+          if (hm && minutesBetween(curHM, hm) <= PRAYER_WINDOW_MIN) {
+            prayerMatch = { label, time }
             break
           }
         }
       }
     }
 
-    // Build payload — prayer reminder preferred, else ayah
-    const payload = prayerLabel
-      ? {
-          title: `🕌 ${prayerLabel} time`,
-          body: `It's time for ${prayerLabel}. Open the app to mark your prayer.`,
-          prayer: prayerLabel.toLowerCase(),
-          url: '/dashboard',
-        }
-      : ayahPayload ?? {
-          title: 'Salah Discipline',
-          body: 'A reminder to stay close to Allah.',
-          url: '/dashboard',
-        }
+    // Build payloads. Prayer notification ALWAYS wins over ayah.
+    const payloads: Array<{
+      title: string
+      body: string
+      url: string
+      tag: string
+      prayer?: string
+    }> = []
+
+    if (prayerMatch) {
+      payloads.push({
+        title: `🕌 ${prayerMatch.label} time`,
+        body: `It's time for ${prayerMatch.label}. Open the app to mark your prayer.`,
+        prayer: prayerMatch.label.toLowerCase(),
+        url: '/dashboard',
+        // Same tag for one prayer per day, so duplicate cron runs replace
+        tag: `prayer-${prayerMatch.label.toLowerCase()}-${dateStr}`,
+      })
+    } else if (ayahPayload) {
+      payloads.push(ayahPayload)
+    }
+
+    if (payloads.length === 0) continue
 
     for (const s of userSubs) {
-      const r = await sendPush(s, payload)
-      if (r.ok) {
-        totalSent++
-      } else if (r.gone) {
-        totalGone++
-        goneEndpoints.push(s.endpoint)
+      for (const payload of payloads) {
+        const r = await sendPush(s, payload)
+        if (r.ok) {
+          if (payload.prayer) prayerSends++
+          else ayahSends++
+        } else if (r.gone) {
+          totalGone++
+          goneEndpoints.push(s.endpoint)
+        }
       }
     }
+
+    debug.push({
+      user: profile?.username ?? userId,
+      prayer: prayerMatch?.label ?? null,
+    })
   }
 
-  // Cleanup dead subscriptions
   if (goneEndpoints.length > 0) {
     await admin
       .from('push_subscriptions')
@@ -223,10 +262,13 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json({
-    sent: totalSent,
+    sent_prayer: prayerSends,
+    sent_ayah: ayahSends,
     gone: totalGone,
     users: subsByUser.size,
-    ayah: !!ayahPayload,
-    hour: curHour,
+    window_min: PRAYER_WINDOW_MIN,
+    is_top_of_hour: isTopOfHour,
+    now: `${String(curHM.h).padStart(2, '0')}:${String(curHM.m).padStart(2, '0')}`,
+    debug,
   })
 }
