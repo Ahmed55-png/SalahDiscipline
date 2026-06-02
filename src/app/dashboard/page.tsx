@@ -7,6 +7,7 @@ import { FadeIn } from '@/components/FadeIn'
 import { InstallPrompt } from '@/components/InstallPrompt'
 import { DailyAyah } from '@/components/DailyAyah'
 import { PrayerTimeWatcher } from '@/components/PrayerTimeWatcher'
+import { SubscribeBanner } from '@/components/SubscribeBanner'
 import { getTimingsByCoordinates } from '@/lib/api/aladhan'
 import { LastWeekStrip, type WeekDay } from '@/components/LastWeekStrip'
 import { DashboardHeader } from '@/components/DashboardHeader'
@@ -166,6 +167,8 @@ export default async function DashboardPage() {
             time: p.time,
           }))}
         />
+
+        <SubscribeBanner />
 
         {ayah && <DailyAyah ayah={ayah} />}
 
