@@ -2,15 +2,14 @@ import { createClient } from '@/lib/supabase/server'
 import { getTimingsByCity } from '@/lib/api/aladhan'
 import { getAyahWithTranslation, randomAyahNumber } from '@/lib/api/quran'
 import { redirect } from 'next/navigation'
-import { logoutAction } from './actions'
 import { PrayerCheckIn } from '@/components/PrayerCheckIn'
 import { StreakCard } from '@/components/StreakCard'
 import { FadeIn } from '@/components/FadeIn'
 import { InstallPrompt } from '@/components/InstallPrompt'
 import { NotificationSetup } from '@/components/NotificationSetup'
-import { RotatingGreeting } from '@/components/RotatingGreeting'
 import { DailyAyah } from '@/components/DailyAyah'
 import { LastWeekStrip, type WeekDay } from '@/components/LastWeekStrip'
+import { DashboardHeader } from '@/components/DashboardHeader'
 import {
   last7Days,
   toIsoDate,
@@ -18,12 +17,8 @@ import {
   weekdayShort,
   type DayStatuses,
 } from '@/lib/utils/calendar'
+import { to12Hour } from '@/lib/utils/time'
 
-const DASHBOARD_GREETINGS = [
-  'Welcome back',
-  'Good to see you',
-  'Hello again',
-] as const
 import type { PrayerStatus } from '@/types/database'
 
 const PRAYERS = [
@@ -121,13 +116,16 @@ export default async function DashboardPage() {
     // ignore
   }
 
-  const prayerRows = PRAYERS.map((p) => ({
-    key: p.key,
-    label: p.label,
-    arabic: p.arabic,
-    time: prayerData?.data.timings[p.api] ?? '--:--',
-    status: ((today?.[p.key] as PrayerStatus | undefined) ?? 'pending') as PrayerStatus,
-  }))
+  const prayerRows = PRAYERS.map((p) => {
+    const rawTime = prayerData?.data.timings[p.api]
+    return {
+      key: p.key,
+      label: p.label,
+      arabic: p.arabic,
+      time: rawTime ? to12Hour(rawTime) : '--:--',
+      status: ((today?.[p.key] as PrayerStatus | undefined) ?? 'pending') as PrayerStatus,
+    }
+  })
 
   return (
     <main className="relative min-h-screen overflow-hidden">
@@ -135,34 +133,14 @@ export default async function DashboardPage() {
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cream/40 to-cream dark:via-[#0A1F1A]/40 dark:to-[#0A1F1A] pointer-events-none" />
 
       <div className="relative z-10 max-w-2xl mx-auto p-4 sm:p-6 space-y-6">
-        <FadeIn delay={0} className="flex items-start justify-between pt-2">
-          <div className="space-y-0.5">
-            <p
-              className="text-sm text-gold-light"
-              style={{ fontFamily: 'var(--font-amiri)' }}
-            >
-              ٱلسَّلَامُ عَلَيْكُمْ
-            </p>
-            <h1 className="text-2xl font-bold text-emerald-deep dark:text-emerald-200 tracking-tight">
-              {profile?.username ?? 'friend'}
-            </h1>
-            <p className="text-xs text-emerald-deep/70 dark:text-emerald-300/70 font-medium">
-              <RotatingGreeting phrases={DASHBOARD_GREETINGS} />
-            </p>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5 pt-0.5">
-              <span className="inline-block w-1 h-1 rounded-full bg-gold" />
-              {city}, {country}
-            </p>
-          </div>
-          <form action={logoutAction}>
-            <button
-              type="submit"
-              className="text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400 hover:text-red-600 dark:hover:text-red-400 transition-colors px-2 py-1"
-            >
-              Logout
-            </button>
-          </form>
-        </FadeIn>
+        <DashboardHeader
+          username={profile?.username ?? 'friend'}
+          email={user.email ?? null}
+          city={city}
+          country={country}
+          currentStreak={streak?.current_streak ?? 0}
+          longestStreak={streak?.longest_streak ?? 0}
+        />
 
         {ayah && <DailyAyah ayah={ayah} />}
 

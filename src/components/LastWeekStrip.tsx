@@ -9,6 +9,7 @@ import {
   type DayStatuses,
 } from '@/lib/utils/calendar'
 import { CalendarDrawer } from './CalendarDrawer'
+import { useLanguage } from './LanguageProvider'
 
 export type WeekDay = {
   iso: string
@@ -39,6 +40,9 @@ const STATUS_CELL: Record<DayStatus, string> = {
 
 export function LastWeekStrip({ days }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const { t, isUrdu } = useLanguage()
+  const urduStyle = isUrdu ? { fontFamily: 'var(--font-nastaliq)' } : undefined
+  const urduDir = isUrdu ? 'rtl' : undefined
 
   return (
     <>
@@ -50,19 +54,28 @@ export function LastWeekStrip({ days }: Props) {
       >
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-sm font-bold text-emerald-deep dark:text-emerald-200">
-              Last 7 Days
+            <h2
+              className="text-sm font-bold text-emerald-deep dark:text-emerald-200"
+              style={urduStyle}
+              dir={urduDir}
+            >
+              {t('week.title')}
             </h2>
-            <p className="text-[10px] uppercase tracking-widest text-gold/80 dark:text-gold-light/70 font-semibold">
-              Your discipline at a glance
+            <p
+              className={`text-[10px] uppercase text-gold/80 dark:text-gold-light/70 font-semibold ${isUrdu ? 'tracking-normal' : 'tracking-widest'}`}
+              style={urduStyle}
+              dir={urduDir}
+            >
+              {t('week.subtitle')}
             </p>
           </div>
           <button
             type="button"
             onClick={() => setDrawerOpen(true)}
-            className="text-[11px] uppercase tracking-widest text-gold dark:text-gold-light font-semibold hover:underline transition-colors"
+            className={`text-[11px] uppercase text-gold dark:text-gold-light font-semibold hover:underline transition-colors ${isUrdu ? 'tracking-normal' : 'tracking-widest'}`}
+            style={urduStyle}
           >
-            Full calendar →
+            {t('week.full_calendar')} →
           </button>
         </div>
 
@@ -92,18 +105,24 @@ export function LastWeekStrip({ days }: Props) {
           })}
         </div>
 
-        <div className="mt-3 flex items-center justify-center gap-3 text-[9px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+        <div
+          className={`mt-3 flex items-center justify-center gap-3 text-[9px] uppercase text-zinc-500 dark:text-zinc-400 ${isUrdu ? 'tracking-normal' : 'tracking-wider'}`}
+          style={urduStyle}
+        >
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-emerald-brand" /> Complete
+            <span className="w-2 h-2 rounded-full bg-emerald-brand" />{' '}
+            {t('legend.complete')}
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-gold" /> Partial
+            <span className="w-2 h-2 rounded-full bg-gold" /> {t('legend.partial')}
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-red-500" /> Broken
+            <span className="w-2 h-2 rounded-full bg-red-500" />{' '}
+            {t('legend.broken')}
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-zinc-400/60" /> No data
+            <span className="w-2 h-2 rounded-full bg-zinc-400/60" />{' '}
+            {t('legend.no_data')}
           </span>
         </div>
       </motion.section>

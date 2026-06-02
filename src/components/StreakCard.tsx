@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { AnimatedNumber } from './AnimatedNumber'
+import { useLanguage } from './LanguageProvider'
 
 type Props = {
   current: number
@@ -9,6 +10,7 @@ type Props = {
 }
 
 export function StreakCard({ current, longest }: Props) {
+  const { t, isUrdu } = useLanguage()
   const hasStreak = current > 0
   return (
     <motion.section
@@ -20,12 +22,20 @@ export function StreakCard({ current, longest }: Props) {
       <div className="absolute inset-0 islamic-pattern-dense opacity-[0.06] pointer-events-none" />
       <div className="relative">
         <div className="flex items-center justify-between">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-emerald-deep dark:text-emerald-300/80">
-            Current Streak
+          <h2
+            className={`text-xs font-semibold uppercase text-emerald-deep dark:text-emerald-300/80 ${isUrdu ? 'tracking-normal' : 'tracking-widest'}`}
+            dir={isUrdu ? 'rtl' : 'ltr'}
+            style={isUrdu ? { fontFamily: 'var(--font-nastaliq)' } : undefined}
+          >
+            {t('streak.current')}
           </h2>
           {longest > 0 && (
-            <div className="text-[10px] font-medium uppercase tracking-wider text-gold/80 dark:text-gold-light/70">
-              Longest · <span className="font-bold text-gold">{longest}</span>
+            <div
+              className={`text-[10px] font-medium uppercase text-gold/80 dark:text-gold-light/70 ${isUrdu ? 'tracking-normal' : 'tracking-wider'}`}
+              style={isUrdu ? { fontFamily: 'var(--font-nastaliq)' } : undefined}
+            >
+              {t('streak.longest')} ·{' '}
+              <span className="font-bold text-gold">{longest}</span>
             </div>
           )}
         </div>
@@ -46,14 +56,21 @@ export function StreakCard({ current, longest }: Props) {
             value={current}
             className="text-6xl font-extrabold bg-gradient-to-br from-emerald-600 via-emerald-400 to-emerald-700 dark:from-emerald-300 dark:via-emerald-200 dark:to-emerald-400 bg-clip-text text-transparent tabular-nums leading-none"
           />
-          <span className="text-sm font-medium text-emerald-deep/70 dark:text-emerald-300/70">
-            {current === 1 ? 'day' : 'days'}
+          <span
+            className="text-sm font-medium text-emerald-deep/70 dark:text-emerald-300/70"
+            style={isUrdu ? { fontFamily: 'var(--font-nastaliq)' } : undefined}
+          >
+            {current === 1 ? t('streak.day') : t('streak.days')}
           </span>
         </div>
 
         {!hasStreak && (
-          <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-            Pray all 5 prayers today to start your streak.
+          <p
+            className="mt-2 text-xs text-zinc-500 dark:text-zinc-400"
+            dir={isUrdu ? 'rtl' : 'ltr'}
+            style={isUrdu ? { fontFamily: 'var(--font-nastaliq)' } : undefined}
+          >
+            {t('streak.start_hint')}
           </p>
         )}
       </div>

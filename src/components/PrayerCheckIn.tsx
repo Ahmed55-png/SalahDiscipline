@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { markPrayerAction } from '@/app/dashboard/actions'
 import type { PrayerStatus } from '@/types/database'
+import { useLanguage } from './LanguageProvider'
 
 type PrayerRow = {
   key: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha'
@@ -25,15 +26,17 @@ const STATUS_BORDER: Record<PrayerStatus, string> = {
     'border-zinc-200 dark:border-emerald-light/10 bg-white/70 dark:bg-[#0F2A22]/60',
 }
 
-const STATUS_LABEL: Record<PrayerStatus, string> = {
-  prayed: 'Prayed',
-  missed: 'Missed',
-  pending: '—',
-}
-
 export function PrayerCheckIn({ prayers }: Props) {
+  const { t, isUrdu } = useLanguage()
+  const urduStyle = isUrdu ? { fontFamily: 'var(--font-nastaliq)' } : undefined
   const allPrayed = prayers.every((p) => p.status === 'prayed')
   const anyMissed = prayers.some((p) => p.status === 'missed')
+
+  const STATUS_LABEL: Record<PrayerStatus, string> = {
+    prayed: t('status.prayed'),
+    missed: t('status.missed'),
+    pending: '—',
+  }
 
   return (
     <motion.section
@@ -43,11 +46,18 @@ export function PrayerCheckIn({ prayers }: Props) {
       className="relative overflow-hidden rounded-2xl border border-emerald-brand/20 dark:border-emerald-light/10 bg-white/90 dark:bg-[#0F2A22]/85 backdrop-blur-xl p-6 shadow-lg shadow-emerald-deep/5"
     >
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-bold text-emerald-deep dark:text-emerald-300">
-          Today&apos;s Check-In
+        <h2
+          className="text-base font-bold text-emerald-deep dark:text-emerald-300"
+          style={urduStyle}
+          dir={isUrdu ? 'rtl' : undefined}
+        >
+          {t('checkin.title')}
         </h2>
-        <p className="text-[10px] uppercase tracking-widest text-gold dark:text-gold-light/80 font-semibold">
-          Tap to mark
+        <p
+          className={`text-[10px] uppercase text-gold dark:text-gold-light/80 font-semibold ${isUrdu ? 'tracking-normal' : 'tracking-widest'}`}
+          style={urduStyle}
+        >
+          {t('checkin.tap_to_mark')}
         </p>
       </div>
 
@@ -79,11 +89,19 @@ export function PrayerCheckIn({ prayers }: Props) {
             >
               ⭐
             </span>
-            <p className="text-center font-bold text-emerald-deep dark:text-gold-soft text-lg">
-              🎉 Maashallah — Today complete!
+            <p
+              className="text-center font-bold text-emerald-deep dark:text-gold-soft text-lg"
+              style={urduStyle}
+              dir={isUrdu ? 'rtl' : undefined}
+            >
+              🎉 {t('checkin.complete_banner')}
             </p>
-            <p className="text-center text-xs text-emerald-deep/80 dark:text-gold-soft/90 mt-1">
-              Streak counted · See you tomorrow
+            <p
+              className="text-center text-xs text-emerald-deep/80 dark:text-gold-soft/90 mt-1"
+              style={urduStyle}
+              dir={isUrdu ? 'rtl' : undefined}
+            >
+              {t('checkin.complete_sub')}
             </p>
           </motion.div>
         )}
@@ -97,8 +115,12 @@ export function PrayerCheckIn({ prayers }: Props) {
             transition={{ duration: 0.35 }}
             className="mt-4 rounded-xl border border-red-400/40 bg-red-50 dark:bg-red-950/30 px-4 py-2 text-center"
           >
-            <p className="text-xs text-red-700 dark:text-red-300">
-              Streak broken — start fresh tomorrow.
+            <p
+              className="text-xs text-red-700 dark:text-red-300"
+              style={urduStyle}
+              dir={isUrdu ? 'rtl' : undefined}
+            >
+              {t('checkin.broken_banner')}
             </p>
           </motion.div>
         )}
@@ -181,8 +203,12 @@ export function PrayerCheckIn({ prayers }: Props) {
         ))}
       </ul>
 
-      <p className="mt-5 text-center text-[11px] text-zinc-500 dark:text-zinc-400 italic">
-        5/5 prayed = streak +1 · Any missed = streak resets
+      <p
+        className="mt-5 text-center text-[11px] text-zinc-500 dark:text-zinc-400 italic"
+        style={urduStyle}
+        dir={isUrdu ? 'rtl' : undefined}
+      >
+        {t('checkin.rule')}
       </p>
     </motion.section>
   )
