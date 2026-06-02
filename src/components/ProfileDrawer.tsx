@@ -6,6 +6,7 @@ import { logoutAction } from '@/app/dashboard/actions'
 import { useLanguage } from './LanguageProvider'
 import { NotificationSetup } from './NotificationSetup'
 import { LocationSetup } from './LocationSetup'
+import { AzanPlayer } from './AzanPlayer'
 
 type Props = {
   open: boolean
@@ -151,6 +152,25 @@ export function ProfileDrawer({
 
               {/* Notifications */}
               <NotificationSetup />
+
+              {/* Azan */}
+              <div className="rounded-2xl border border-gold/30 bg-white/85 dark:bg-[#0F2A22]/85 backdrop-blur-xl p-4">
+                <div className="flex items-start gap-3 mb-2">
+                  <div className="text-2xl" aria-hidden>
+                    🕌
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-emerald-deep dark:text-emerald-200">
+                      Azan
+                    </h3>
+                    <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
+                      Plays as an alarm at each prayer time (when app is open).
+                      Tap to test.
+                    </p>
+                  </div>
+                </div>
+                <AzanPlayer />
+              </div>
 
               {/* Logout */}
               <form action={logoutAction}>

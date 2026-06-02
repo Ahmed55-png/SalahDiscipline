@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { useLanguage } from './LanguageProvider'
 import { LanguageToggle } from './LanguageToggle'
 import { ProfileButton } from './ProfileButton'
+import { ThemeToggle } from './ThemeToggle'
 
 type Props = {
   username: string
@@ -66,6 +67,7 @@ export function DashboardHeader(props: Props) {
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
+        <ThemeToggle />
         <LanguageToggle />
         <ProfileButton {...props} />
       </div>

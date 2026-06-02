@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Manual dark mode via .dark class on <html> (set by ThemeProvider).
+   Tailwind v4 custom-variant; falls back to system if no class set. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   /* Islamic-themed palette */
   --emerald-deep: #064E3B;
@@ -31,10 +35,15 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not(.light) {
     --background: var(--ink);
     --foreground: #F5F1E4;
   }
+}
+
+:root.dark {
+  --background: var(--ink);
+  --foreground: #F5F1E4;
 }
 
 body {

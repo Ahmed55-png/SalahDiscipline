@@ -6,6 +6,7 @@ import { PrayerCheckIn } from '@/components/PrayerCheckIn'
 import { FadeIn } from '@/components/FadeIn'
 import { InstallPrompt } from '@/components/InstallPrompt'
 import { DailyAyah } from '@/components/DailyAyah'
+import { PrayerTimeWatcher } from '@/components/PrayerTimeWatcher'
 import { getTimingsByCoordinates } from '@/lib/api/aladhan'
 import { LastWeekStrip, type WeekDay } from '@/components/LastWeekStrip'
 import { DashboardHeader } from '@/components/DashboardHeader'
@@ -156,6 +157,14 @@ export default async function DashboardPage() {
           hasCoords={hasCoords}
           latitude={lat}
           longitude={lon}
+        />
+
+        <PrayerTimeWatcher
+          prayers={prayerRows.map((p) => ({
+            key: p.key,
+            label: p.label,
+            time: p.time,
+          }))}
         />
 
         {ayah && <DailyAyah ayah={ayah} />}
