@@ -140,7 +140,7 @@ export function CalendarDrawer({ open, onClose }: Props) {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', stiffness: 320, damping: 36 }}
-            className="fixed inset-y-0 right-0 z-50 w-full sm:max-w-md bg-cream dark:bg-[#0A1F1A] border-l border-gold/30 shadow-2xl shadow-emerald-deep/40 overflow-y-auto"
+            className="fixed inset-y-0 right-0 z-50 w-[85%] sm:w-full sm:max-w-md bg-cream dark:bg-[#0A1F1A] border-l border-gold/30 shadow-2xl shadow-emerald-deep/40 overflow-y-auto"
           >
             {/* Subtle pattern backdrop */}
             <div className="absolute inset-0 islamic-pattern opacity-30 pointer-events-none" />
