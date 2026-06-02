@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { logoutAction } from '@/app/dashboard/actions'
 import { useLanguage } from './LanguageProvider'
+import { NotificationSetup } from './NotificationSetup'
 
 type Props = {
   open: boolean
@@ -142,6 +143,9 @@ export function ProfileDrawer({
                   </span>
                 </div>
               </div>
+
+              {/* Notifications */}
+              <NotificationSetup />
 
               {/* Logout */}
               <form action={logoutAction}>

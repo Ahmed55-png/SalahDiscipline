@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { markPrayerAction } from '@/app/dashboard/actions'
 import type { PrayerStatus } from '@/types/database'
 import { useLanguage } from './LanguageProvider'
+import { AnimatedNumber } from './AnimatedNumber'
 
 type PrayerRow = {
   key: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha'
@@ -15,6 +16,8 @@ type PrayerRow = {
 
 type Props = {
   prayers: PrayerRow[]
+  currentStreak: number
+  longestStreak: number
 }
 
 const STATUS_BORDER: Record<PrayerStatus, string> = {
@@ -26,7 +29,7 @@ const STATUS_BORDER: Record<PrayerStatus, string> = {
     'border-zinc-200 dark:border-emerald-light/10 bg-white/70 dark:bg-[#0F2A22]/60',
 }
 
-export function PrayerCheckIn({ prayers }: Props) {
+export function PrayerCheckIn({ prayers, currentStreak, longestStreak }: Props) {
   const { t, isUrdu } = useLanguage()
   const urduStyle = isUrdu ? { fontFamily: 'var(--font-nastaliq)' } : undefined
   const allPrayed = prayers.every((p) => p.status === 'prayed')
@@ -45,21 +48,54 @@ export function PrayerCheckIn({ prayers }: Props) {
       transition={{ duration: 0.55, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
       className="relative overflow-hidden rounded-2xl border border-emerald-brand/20 dark:border-emerald-light/10 bg-white/90 dark:bg-[#0F2A22]/85 backdrop-blur-xl p-6 shadow-lg shadow-emerald-deep/5"
     >
-      <div className="flex items-center justify-between">
-        <h2
-          className="text-base font-bold text-emerald-deep dark:text-emerald-300"
-          style={urduStyle}
-          dir={isUrdu ? 'rtl' : undefined}
-        >
-          {t('checkin.title')}
-        </h2>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <h2
+            className="text-base font-bold text-emerald-deep dark:text-emerald-300"
+            style={urduStyle}
+            dir={isUrdu ? 'rtl' : undefined}
+          >
+            {t('checkin.title')}
+          </h2>
+          {currentStreak > 0 && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.6 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: 'spring', stiffness: 260, damping: 18, delay: 0.2 }}
+              className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-emerald-50 to-gold-soft/40 dark:from-emerald-950/40 dark:to-gold/15 border border-gold/40 px-2 py-0.5"
+            >
+              <span className="text-sm flame-pulse" aria-hidden>
+                🔥
+              </span>
+              <AnimatedNumber
+                value={currentStreak}
+                className="text-sm font-bold text-emerald-700 dark:text-emerald-300 tabular-nums leading-none"
+              />
+              <span
+                className="text-[10px] text-emerald-700/80 dark:text-emerald-300/80"
+                style={urduStyle}
+              >
+                {currentStreak === 1 ? t('streak.day') : t('streak.days')}
+              </span>
+            </motion.div>
+          )}
+        </div>
         <p
-          className={`text-[10px] uppercase text-gold dark:text-gold-light/80 font-semibold ${isUrdu ? 'tracking-normal' : 'tracking-widest'}`}
+          className={`text-[10px] uppercase text-gold dark:text-gold-light/80 font-semibold shrink-0 ${isUrdu ? 'tracking-normal' : 'tracking-widest'}`}
           style={urduStyle}
         >
           {t('checkin.tap_to_mark')}
         </p>
       </div>
+
+      {longestStreak > 0 && longestStreak !== currentStreak && (
+        <p
+          className="text-[10px] text-gold/70 dark:text-gold-light/60 mt-0.5"
+          style={urduStyle}
+        >
+          {t('streak.longest')} · {longestStreak}
+        </p>
+      )}
 
       <AnimatePresence mode="wait">
         {allPrayed && (

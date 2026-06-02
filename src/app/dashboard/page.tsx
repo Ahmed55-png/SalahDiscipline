@@ -3,10 +3,8 @@ import { getTimingsByCity } from '@/lib/api/aladhan'
 import { getAyahWithTranslation, randomAyahNumber } from '@/lib/api/quran'
 import { redirect } from 'next/navigation'
 import { PrayerCheckIn } from '@/components/PrayerCheckIn'
-import { StreakCard } from '@/components/StreakCard'
 import { FadeIn } from '@/components/FadeIn'
 import { InstallPrompt } from '@/components/InstallPrompt'
-import { NotificationSetup } from '@/components/NotificationSetup'
 import { DailyAyah } from '@/components/DailyAyah'
 import { LastWeekStrip, type WeekDay } from '@/components/LastWeekStrip'
 import { DashboardHeader } from '@/components/DashboardHeader'
@@ -144,16 +142,13 @@ export default async function DashboardPage() {
 
         {ayah && <DailyAyah ayah={ayah} />}
 
-        <StreakCard
-          current={streak?.current_streak ?? 0}
-          longest={streak?.longest_streak ?? 0}
-        />
-
-        <NotificationSetup />
-
         <LastWeekStrip days={weekDays} />
 
-        <PrayerCheckIn prayers={prayerRows} />
+        <PrayerCheckIn
+          prayers={prayerRows}
+          currentStreak={streak?.current_streak ?? 0}
+          longestStreak={streak?.longest_streak ?? 0}
+        />
 
         <InstallPrompt />
 

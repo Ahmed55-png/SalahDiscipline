@@ -88,7 +88,7 @@ export function CalendarMonth({ cells }: Props) {
               animate={{ opacity: c.inMonth ? 1 : 0.45, scale: 1 }}
               transition={{ delay: Math.min(idx, 28) * 0.015, duration: 0.3 }}
               whileTap={{ scale: 0.92 }}
-              className={`aspect-square flex flex-col items-center justify-center rounded-lg border-2 transition-all ${STATUS_CELL[status]} ${isSelected ? 'ring-2 ring-gold scale-105 z-10' : ''}`}
+              className={`aspect-square flex flex-col items-center justify-center rounded-md border transition-all ${STATUS_CELL[status]} ${isSelected ? 'ring-2 ring-gold scale-105 z-10' : ''}`}
               aria-label={`${c.iso}, ${
                 status === 'complete'
                   ? 'all 5 prayed'
@@ -101,11 +101,11 @@ export function CalendarMonth({ cells }: Props) {
                         : 'no data'
               }`}
             >
-              <span className="text-xs sm:text-sm font-bold leading-none">
+              <span className="text-[11px] sm:text-xs font-bold leading-none">
                 {c.date.getDate()}
               </span>
               {!c.isFuture && (status === 'complete' || status === 'broken' || status === 'partial') && (
-                <span className="text-[9px] font-mono mt-0.5 tabular-nums opacity-90">
+                <span className="text-[8px] font-mono mt-0.5 tabular-nums opacity-90">
                   {count}/5
                 </span>
               )}
