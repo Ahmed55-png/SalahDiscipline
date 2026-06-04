@@ -67,8 +67,8 @@ export function DashboardHeader(props: Props) {
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
-        <ThemeToggle />
         <LanguageToggle />
+        <ThemeToggle />
         <ProfileButton {...props} />
       </div>
     </motion.div>
