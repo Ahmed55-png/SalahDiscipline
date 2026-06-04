@@ -28,7 +28,7 @@ serwist.addEventListeners()
 // forces this SW, on activate, to delete EVERY cache that isn't already
 // tagged with the current version. Next page load then refetches from the
 // network with the new build's chunks.
-const CACHE_VERSION = 'v3-2026-06-03'
+const CACHE_VERSION = 'v4-2026-06-04'
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
