@@ -22,6 +22,41 @@ const serwist = new Serwist({
 
 serwist.addEventListeners()
 
+// ---------- One-time cache nuke (v3) ----------
+// Users who installed the PWA before the env-var fix have an old precache
+// cache that doesn't include the VAPID public key. Bumping CACHE_VERSION
+// forces this SW, on activate, to delete EVERY cache that isn't already
+// tagged with the current version. Next page load then refetches from the
+// network with the new build's chunks.
+const CACHE_VERSION = 'v3-2026-06-03'
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    (async () => {
+      const keys = await caches.keys()
+      await Promise.all(
+        keys
+          .filter((k) => !k.includes(CACHE_VERSION))
+          .map((k) => caches.delete(k))
+      )
+      // Take control of all open tabs/PWA windows so they start using this SW
+      await self.clients.claim()
+      // Tell each client to reload so the new chunks are fetched
+      const clients = await self.clients.matchAll({ type: 'window' })
+      for (const client of clients) {
+        try {
+          // @ts-expect-error navigate exists on WindowClient
+          if ('navigate' in client && typeof client.navigate === 'function') {
+            await client.navigate(client.url)
+          }
+        } catch {
+          /* ignore — some clients may not allow navigate */
+        }
+      }
+    })()
+  )
+})
+
 // ---------- Push notifications ----------
 
 type PushPayload = {
