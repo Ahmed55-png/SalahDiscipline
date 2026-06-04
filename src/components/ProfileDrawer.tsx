@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { logoutAction } from '@/app/dashboard/actions'
 import { useLanguage } from './LanguageProvider'
@@ -23,6 +23,8 @@ type Props = {
   longitude: number | null
 }
 
+type Panel = 'menu' | 'location' | 'notifications' | 'azan'
+
 export function ProfileDrawer({
   open,
   onClose,
@@ -38,6 +40,7 @@ export function ProfileDrawer({
   longitude,
 }: Props) {
   const { t, isUrdu } = useLanguage()
+  const [panel, setPanel] = useState<Panel>('menu')
   const initial = (username[0] ?? '?').toUpperCase()
 
   useEffect(() => {
@@ -56,6 +59,19 @@ export function ProfileDrawer({
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [open, onClose])
+
+  useEffect(() => {
+    if (!open) queueMicrotask(() => setPanel('menu'))
+  }, [open])
+
+  const panelTitle =
+    panel === 'location'
+      ? 'Location'
+      : panel === 'notifications'
+        ? 'Namaz Reminders'
+        : panel === 'azan'
+          ? 'Azan'
+          : t('profile.title')
 
   return (
     <AnimatePresence>
@@ -85,106 +101,159 @@ export function ProfileDrawer({
             <div className="absolute inset-0 islamic-pattern opacity-30 pointer-events-none" />
 
             <div className="relative p-4 sm:p-5 space-y-5">
-              {/* Header */}
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold text-emerald-deep dark:text-emerald-200">
-                  {t('profile.title')}
-                </h2>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  {panel !== 'menu' && (
+                    <button
+                      type="button"
+                      onClick={() => setPanel('menu')}
+                      aria-label="Back to profile options"
+                      className="w-9 h-9 flex items-center justify-center rounded-full border border-emerald-brand/30 hover:bg-emerald-brand/10 text-emerald-deep dark:text-emerald-200 transition-colors"
+                    >
+                      {'<'}
+                    </button>
+                  )}
+                  <h2 className="text-lg font-bold text-emerald-deep dark:text-emerald-200 truncate">
+                    {panelTitle}
+                  </h2>
+                </div>
                 <button
+                  type="button"
                   onClick={onClose}
                   aria-label="Close profile"
                   className="w-9 h-9 flex items-center justify-center rounded-full border border-emerald-brand/30 hover:bg-emerald-brand/10 text-emerald-deep dark:text-emerald-200 transition-colors"
                 >
-                  ✕
+                  x
                 </button>
               </div>
 
-              {/* Avatar + username */}
-              <div className="flex flex-col items-center gap-3 pt-2">
-                <div className="relative">
-                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-brand via-emerald-deep to-emerald-brand flex items-center justify-center text-cream text-4xl font-bold shadow-lg shadow-emerald-deep/30 ring-4 ring-gold/40">
-                    {initial}
+              {panel === 'menu' ? (
+                <>
+                  <div className="flex flex-col items-center gap-3 pt-2">
+                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-brand via-emerald-deep to-emerald-brand flex items-center justify-center text-cream text-4xl font-bold shadow-lg shadow-emerald-deep/30 ring-4 ring-gold/40">
+                      {initial}
+                    </div>
+                    <div className="text-center">
+                      <h3 className="text-xl font-bold text-emerald-deep dark:text-emerald-200">
+                        {username}
+                      </h3>
+                      {email && (
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 break-all">
+                          {email}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div className="text-center">
-                  <h3 className="text-xl font-bold text-emerald-deep dark:text-emerald-200">
-                    {username}
-                  </h3>
-                  {email && (
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 break-all">
-                      {email}
-                    </p>
-                  )}
-                </div>
-              </div>
 
-              {/* Stats */}
-              <div className="grid grid-cols-2 gap-2">
-                <div className="rounded-xl border border-emerald-light/30 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-3 text-center">
-                  <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300 tabular-nums leading-none">
-                    {currentStreak}
-                  </p>
-                  <p
-                    className={`text-[10px] uppercase tracking-wider text-emerald-700/80 dark:text-emerald-300/80 font-semibold mt-1 ${isUrdu ? 'tracking-normal' : ''}`}
-                  >
-                    {t('profile.current_streak')}
-                  </p>
-                </div>
-                <div className="rounded-xl border border-gold/30 bg-gold-soft/30 dark:bg-gold/10 px-3 py-3 text-center">
-                  <p className="text-2xl font-bold text-gold tabular-nums leading-none">
-                    {longestStreak}
-                  </p>
-                  <p
-                    className={`text-[10px] uppercase tracking-wider text-gold/80 font-semibold mt-1 ${isUrdu ? 'tracking-normal' : ''}`}
-                  >
-                    {t('profile.longest_streak')}
-                  </p>
-                </div>
-              </div>
-
-              {/* Location (GPS) */}
-              <LocationSetup
-                currentLabel={locationLabel ?? `${city}, ${country}`}
-                hasCoords={hasCoords}
-                latitude={latitude}
-                longitude={longitude}
-              />
-
-              {/* Notifications */}
-              <NotificationSetup />
-
-              {/* Azan */}
-              <div className="rounded-2xl border border-gold/30 bg-white/85 dark:bg-[#0F2A22]/85 backdrop-blur-xl p-4">
-                <div className="flex items-start gap-3 mb-2">
-                  <div className="text-2xl" aria-hidden>
-                    🕌
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-xl border border-emerald-light/30 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-3 text-center">
+                      <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300 tabular-nums leading-none">
+                        {currentStreak}
+                      </p>
+                      <p
+                        className={`text-[10px] uppercase tracking-wider text-emerald-700/80 dark:text-emerald-300/80 font-semibold mt-1 ${isUrdu ? 'tracking-normal' : ''}`}
+                      >
+                        {t('profile.current_streak')}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-gold/30 bg-gold-soft/30 dark:bg-gold/10 px-3 py-3 text-center">
+                      <p className="text-2xl font-bold text-gold tabular-nums leading-none">
+                        {longestStreak}
+                      </p>
+                      <p
+                        className={`text-[10px] uppercase tracking-wider text-gold/80 font-semibold mt-1 ${isUrdu ? 'tracking-normal' : ''}`}
+                      >
+                        {t('profile.longest_streak')}
+                      </p>
+                    </div>
                   </div>
-                  <div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <ProfileOption
+                      icon="LOC"
+                      label="Location"
+                      sublabel={hasCoords ? 'Saved' : 'Set up'}
+                      onClick={() => setPanel('location')}
+                    />
+                    <ProfileOption
+                      icon="REM"
+                      label="Reminders"
+                      sublabel="Push"
+                      onClick={() => setPanel('notifications')}
+                    />
+                    <ProfileOption
+                      icon="AZN"
+                      label="Azan"
+                      sublabel="Audio"
+                      onClick={() => setPanel('azan')}
+                    />
+                  </div>
+
+                  <form action={logoutAction}>
+                    <button
+                      type="submit"
+                      className="w-full rounded-xl border-2 border-red-400/50 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 py-3 text-sm font-semibold hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors"
+                    >
+                      {t('profile.logout')}
+                    </button>
+                  </form>
+                </>
+              ) : panel === 'location' ? (
+                <LocationSetup
+                  currentLabel={locationLabel ?? `${city}, ${country}`}
+                  hasCoords={hasCoords}
+                  latitude={latitude}
+                  longitude={longitude}
+                />
+              ) : panel === 'notifications' ? (
+                <NotificationSetup />
+              ) : (
+                <div className="rounded-2xl border border-gold/30 bg-white/85 dark:bg-[#0F2A22]/85 backdrop-blur-xl p-4">
+                  <div className="mb-3">
                     <h3 className="text-sm font-bold text-emerald-deep dark:text-emerald-200">
                       Azan
                     </h3>
                     <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
-                      Plays as an alarm at each prayer time (when app is open).
-                      Tap to test.
+                      Plays as an alarm at each prayer time when the app is open.
                     </p>
                   </div>
+                  <AzanPlayer />
                 </div>
-                <AzanPlayer />
-              </div>
-
-              {/* Logout */}
-              <form action={logoutAction}>
-                <button
-                  type="submit"
-                  className="w-full rounded-xl border-2 border-red-400/50 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 py-3 text-sm font-semibold hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors"
-                >
-                  {t('profile.logout')}
-                </button>
-              </form>
+              )}
             </div>
           </motion.aside>
         </>
       )}
     </AnimatePresence>
+  )
+}
+
+function ProfileOption({
+  icon,
+  label,
+  sublabel,
+  onClick,
+}: {
+  icon: string
+  label: string
+  sublabel: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="min-h-28 rounded-2xl border border-gold/30 bg-white/85 dark:bg-[#0F2A22]/85 backdrop-blur-xl px-2 py-3 text-center shadow-lg shadow-emerald-deep/5 hover:border-emerald-brand/40 hover:bg-emerald-50/70 dark:hover:bg-emerald-950/30 transition-colors"
+    >
+      <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-brand text-cream text-[11px] font-bold tracking-wide ring-2 ring-gold/35">
+        {icon}
+      </span>
+      <span className="mt-2 block text-xs font-bold text-emerald-deep dark:text-emerald-200">
+        {label}
+      </span>
+      <span className="mt-0.5 block text-[10px] text-zinc-500 dark:text-zinc-400">
+        {sublabel}
+      </span>
+    </button>
   )
 }

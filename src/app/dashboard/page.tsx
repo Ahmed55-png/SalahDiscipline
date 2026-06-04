@@ -38,6 +38,15 @@ function todayIso(): string {
   return `${yyyy}-${mm}-${dd}`
 }
 
+function previousIsoFrom(dateIso: string): string {
+  const d = new Date(`${dateIso}T00:00:00`)
+  d.setDate(d.getDate() - 1)
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}
+
 export default async function DashboardPage() {
   const supabase = await createClient()
   const {
@@ -68,7 +77,7 @@ export default async function DashboardPage() {
       .single(),
     supabase
       .from('streaks')
-      .select('current_streak, longest_streak')
+      .select('current_streak, longest_streak, last_prayed_date')
       .eq('user_id', user.id)
       .single(),
     supabase
@@ -140,6 +149,15 @@ export default async function DashboardPage() {
       status: ((today?.[p.key] as PrayerStatus | undefined) ?? 'pending') as PrayerStatus,
     }
   })
+  const todayStatuses = prayerRows.map((p) => p.status)
+  const todayHasMissed = todayStatuses.some((s) => s === 'missed')
+  const streakLastDate = streak?.last_prayed_date as string | null | undefined
+  const isStreakDateActive =
+    streakLastDate === todayIsoStr ||
+    streakLastDate === previousIsoFrom(todayIsoStr)
+  const currentStreak =
+    todayHasMissed || !isStreakDateActive ? 0 : (streak?.current_streak ?? 0)
+  const longestStreak = streak?.longest_streak ?? 0
 
   return (
     <main className="relative min-h-screen overflow-hidden">
@@ -152,8 +170,8 @@ export default async function DashboardPage() {
           email={user.email ?? null}
           city={city}
           country={country}
-          currentStreak={streak?.current_streak ?? 0}
-          longestStreak={streak?.longest_streak ?? 0}
+          currentStreak={currentStreak}
+          longestStreak={longestStreak}
           locationLabel={locationLabel}
           hasCoords={hasCoords}
           latitude={lat}
@@ -176,8 +194,8 @@ export default async function DashboardPage() {
 
         <PrayerCheckIn
           prayers={prayerRows}
-          currentStreak={streak?.current_streak ?? 0}
-          longestStreak={streak?.longest_streak ?? 0}
+          currentStreak={currentStreak}
+          longestStreak={longestStreak}
         />
 
         <InstallPrompt />

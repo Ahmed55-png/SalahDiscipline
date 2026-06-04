@@ -191,13 +191,12 @@ export async function markPrayerAction(prayer: PrayerCol, status: Status) {
       }
       lastPrayed = date
       if (current > longest) longest = current
+    } else if (lastPrayed === date) {
+      current = Math.max(0, current - 1)
+      lastPrayed = current > 0 ? yesterdayIsoFrom(date) : null
     } else if (anyMissed) {
-      if (lastPrayed === date) {
-        current = Math.max(0, current - 1)
-        lastPrayed = current > 0 ? yesterdayIsoFrom(date) : null
-      } else {
-        current = 0
-      }
+      current = 0
+      lastPrayed = null
     }
 
     await supabase
