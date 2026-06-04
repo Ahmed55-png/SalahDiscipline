@@ -1,21 +1,19 @@
-name: Prayer notify (every 5 minutes)
+name: Prayer notify (every 10 minutes)
 
-# We can't run a Vercel cron more than once a day on the Hobby plan,
-# so the actual prayer reminder schedule lives here. GitHub Actions
-# schedules drift a bit but are accurate enough for ±5 min prayer
-# windows.
+# Vercel Hobby cron is limited to daily runs, so the actual reminder
+# schedule lives here. GitHub Actions schedules can drift a bit, but they
+# are accurate enough for prayer and ayah reminder checks.
 #
-# Free for public repos; ~288 runs/day × ~5s each is well under the
+# Free for public repos; about 144 runs/day x ~5s each is well under the
 # 2000 min/month private-repo budget too.
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '*/10 * * * *'
   workflow_dispatch: {}
 
-# Concurrency: never overlap runs — if a previous run is somehow still
-# going when the next fires, the new one waits (and skip-stale could
-# be added later).
+# Concurrency: never overlap runs. If a previous run is somehow still going
+# when the next fires, the new one waits.
 concurrency:
   group: prayer-notify
   cancel-in-progress: false

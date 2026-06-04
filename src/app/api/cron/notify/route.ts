@@ -116,7 +116,7 @@ export async function GET(req: NextRequest) {
   const dateStr = todayDateString(now)
   const ayahBucket = Math.floor(now.getMinutes() / AYAH_INTERVAL_MIN)
 
-  // Build ayah payload on every cron run. The Vercel schedule controls the
+  // Build ayah payload on every cron run. GitHub Actions controls the
   // 10-minute cadence; the tag buckets retries so duplicate runs replace.
   let ayahPayload: {
     title: string
