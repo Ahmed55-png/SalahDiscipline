@@ -35,15 +35,21 @@ export async function subscribePushAction(input: {
   } = await supabase.auth.getUser()
   if (!user) return { ok: false, error: 'Not authenticated' }
 
-  const { error } = await supabase.from('push_subscriptions').upsert(
+  const { error: deleteError } = await supabase
+    .from('push_subscriptions')
+    .delete()
+    .eq('user_id', user.id)
+    .eq('endpoint', endpoint)
+  if (deleteError) return { ok: false, error: deleteError.message }
+
+  const { error } = await supabase.from('push_subscriptions').insert(
     {
       user_id: user.id,
       endpoint,
       p256dh,
       auth,
       user_agent: userAgent ?? null,
-    },
-    { onConflict: 'user_id,endpoint' }
+    }
   )
   if (error) return { ok: false, error: error.message }
   return { ok: true }
