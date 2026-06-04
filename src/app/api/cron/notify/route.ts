@@ -246,10 +246,10 @@ export async function GET(req: NextRequest) {
 
     if (prayerMatch) {
       payloads.push({
-        title: `🕌 ${prayerMatch.label} time`,
-        body: `It's time for ${prayerMatch.label}. Open the app to mark your prayer.`,
+        title: `Adhan - ${prayerMatch.label} time`,
+        body: `Namaz ka waqt ho gaya. Tap to open the app and play adhan.`,
         prayer: prayerMatch.label.toLowerCase(),
-        url: '/dashboard',
+        url: `/dashboard?adhan=${prayerMatch.label.toLowerCase()}`,
         // Same tag for one prayer per day, so duplicate cron runs replace
         tag: `prayer-${prayerMatch.label.toLowerCase()}-${dateStr}`,
       })

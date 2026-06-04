@@ -74,16 +74,26 @@ self.addEventListener('push', (event) => {
 
   const title = payload.title ?? 'Salah Discipline'
   const body = payload.body ?? 'Namaz ka waqt ho gaya'
+  const isPrayer = !!payload.prayer
+  const options: NotificationOptions & {
+    renotify?: boolean
+    vibrate?: number[]
+  } = {
+    body,
+    icon: '/icon',
+    badge: '/icon',
+    tag: payload.tag ?? payload.prayer ?? 'salah-notification',
+    data: { url: payload.url ?? '/dashboard' },
+    requireInteraction: isPrayer,
+    renotify: isPrayer,
+    silent: false,
+    vibrate: isPrayer
+      ? [700, 250, 700, 250, 700, 500, 1000]
+      : [250, 100, 250],
+  }
 
   event.waitUntil(
-    self.registration.showNotification(title, {
-      body,
-      icon: '/icon',
-      badge: '/icon',
-      tag: payload.tag ?? payload.prayer ?? 'salah-notification',
-      data: { url: payload.url ?? '/dashboard' },
-      requireInteraction: false,
-    })
+    self.registration.showNotification(title, options)
   )
 })
 
