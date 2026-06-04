@@ -54,7 +54,8 @@ function parseHHMM(time: string | undefined): { h: number; m: number } | null {
 }
 
 function minutesBetween(a: { h: number; m: number }, b: { h: number; m: number }): number {
-  return Math.abs(a.h * 60 + a.m - (b.h * 60 + b.m))
+  const diff = Math.abs(a.h * 60 + a.m - (b.h * 60 + b.m))
+  return Math.min(diff, 24 * 60 - diff)
 }
 
 function todayDateString(now: Date): string {
@@ -62,6 +63,25 @@ function todayDateString(now: Date): string {
   const mm = String(now.getMonth() + 1).padStart(2, '0')
   const dd = String(now.getDate()).padStart(2, '0')
   return `${yyyy}-${mm}-${dd}`
+}
+
+function localPartsForTimeZone(now: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(now)
+  const get = (type: string) =>
+    parts.find((part) => part.type === type)?.value ?? ''
+  return {
+    h: Number(get('hour')),
+    m: Number(get('minute')),
+    date: `${get('year')}-${get('month')}-${get('day')}`,
+  }
 }
 
 async function sendPush(sub: Subscription, payload: object) {
@@ -193,6 +213,10 @@ export async function GET(req: NextRequest) {
         timings = null
       }
       if (timings) {
+        const localNow = localPartsForTimeZone(
+          now,
+          timings.data.meta.timezone || 'UTC'
+        )
         const prayers: Array<[string, string]> = [
           ['Fajr', timings.data.timings.Fajr],
           ['Dhuhr', timings.data.timings.Dhuhr],
@@ -202,7 +226,7 @@ export async function GET(req: NextRequest) {
         ]
         for (const [label, time] of prayers) {
           const hm = parseHHMM(time)
-          if (hm && minutesBetween(curHM, hm) <= PRAYER_WINDOW_MIN) {
+          if (hm && minutesBetween(localNow, hm) <= PRAYER_WINDOW_MIN) {
             prayerMatch = { label, time }
             break
           }

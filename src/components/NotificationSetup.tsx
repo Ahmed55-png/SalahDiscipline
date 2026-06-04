@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { useCallback, useEffect, useState, useTransition } from 'react'
 import { useLanguage } from './LanguageProvider'
 import {
+  sendReminderCheckAction,
   sendTestPushAction,
   subscribePushAction,
   unsubscribePushAction,
@@ -19,6 +20,20 @@ export function NotificationSetup() {
   const [pending, startTransition] = useTransition()
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+
+  const runReminderCheck = useCallback(() => {
+    if (typeof window === 'undefined') return
+    const bucket = Math.floor(Date.now() / 600_000)
+    const key = `salah:last-reminder-check:${bucket}`
+    if (localStorage.getItem(key)) return
+    localStorage.setItem(key, String(Date.now()))
+    startTransition(async () => {
+      const out = await sendReminderCheckAction()
+      if (!out.ok && out.error) {
+        setMessage(out.error)
+      }
+    })
+  }, [startTransition])
 
   const saveSubscription = useCallback(async (sub: PushSubscription) => {
     const json = sub.toJSON()
@@ -61,6 +76,13 @@ export function NotificationSetup() {
       }
     })
   }, [saveSubscription])
+
+  useEffect(() => {
+    if (permission !== 'granted' || !pushSubscribed) return
+    runReminderCheck()
+    const timer = window.setInterval(runReminderCheck, 10 * 60 * 1000)
+    return () => window.clearInterval(timer)
+  }, [permission, pushSubscribed, runReminderCheck])
 
   const enable = async () => {
     setBusy(true)

@@ -11,6 +11,7 @@ import { SubscribeBanner } from '@/components/SubscribeBanner'
 import { getTimingsByCoordinates } from '@/lib/api/aladhan'
 import { LastWeekStrip, type WeekDay } from '@/components/LastWeekStrip'
 import { DashboardHeader } from '@/components/DashboardHeader'
+import { NotificationHeartbeat } from '@/components/NotificationHeartbeat'
 import {
   last7Days,
   toIsoDate,
@@ -177,6 +178,8 @@ export default async function DashboardPage() {
           latitude={lat}
           longitude={lon}
         />
+
+        <NotificationHeartbeat />
 
         <PrayerTimeWatcher
           prayers={prayerRows.map((p) => ({
