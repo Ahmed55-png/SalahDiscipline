@@ -1,7 +1,7 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 type Props = {
   /** Optional prayer label currently being announced (e.g. "Fajr") */
@@ -15,14 +15,7 @@ export function AzanPlayer({ prayerLabel, autoTriggerOnMount }: Props) {
   const [playing, setPlaying] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (autoTriggerOnMount) {
-      void play()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoTriggerOnMount])
-
-  const play = async () => {
+  const play = useCallback(async () => {
     setError(null)
     const el = audioRef.current
     if (!el) return
@@ -35,7 +28,13 @@ export function AzanPlayer({ prayerLabel, autoTriggerOnMount }: Props) {
         'Browser blocked autoplay. Tap the button to play, then it will work for the rest of this session.'
       )
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    if (autoTriggerOnMount) {
+      queueMicrotask(() => void play())
+    }
+  }, [autoTriggerOnMount, play])
 
   const stop = () => {
     const el = audioRef.current

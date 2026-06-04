@@ -18,6 +18,7 @@ export const dynamic = 'force-dynamic'
 // 5 min, but the actual fire can drift ±2 min, so ±3 min covers it
 // while staying tight enough that adjacent cron runs don't both fire.
 const PRAYER_WINDOW_MIN = 3
+const AYAH_INTERVAL_MIN = 10
 
 type Profile = {
   id: string
@@ -113,26 +114,24 @@ export async function GET(req: NextRequest) {
   const now = new Date()
   const curHM = { h: now.getHours(), m: now.getMinutes() }
   const dateStr = todayDateString(now)
-  const isTopOfHour = now.getMinutes() < 5 // Send hourly ayah only near :00
+  const ayahBucket = Math.floor(now.getMinutes() / AYAH_INTERVAL_MIN)
 
-  // Build hourly ayah payload (only at top of hour)
+  // Build ayah payload on every cron run. The Vercel schedule controls the
+  // 10-minute cadence; the tag buckets retries so duplicate runs replace.
   let ayahPayload: {
     title: string
     body: string
     url: string
     tag: string
   } | null = null
-  if (isTopOfHour) {
-    const ayahNum = randomAyahNumber()
-    const ayah = await getAyahWithTranslation(ayahNum)
-    if (ayah) {
-      ayahPayload = {
-        title: `Surah ${ayah.arabic.surah.englishName} · ${ayah.arabic.surah.number}:${ayah.arabic.numberInSurah}`,
-        body: ayah.urdu.text,
-        url: '/dashboard',
-        // Same tag for the whole hour, so duplicate sends (if any) replace
-        tag: `ayah-${dateStr}-${curHM.h}`,
-      }
+  const ayahNum = randomAyahNumber()
+  const ayah = await getAyahWithTranslation(ayahNum)
+  if (ayah) {
+    ayahPayload = {
+      title: `Surah ${ayah.arabic.surah.englishName} · ${ayah.arabic.surah.number}:${ayah.arabic.numberInSurah}`,
+      body: ayah.urdu.text,
+      url: '/dashboard',
+      tag: `ayah-${dateStr}-${curHM.h}-${ayahBucket}`,
     }
   }
 
@@ -211,7 +210,8 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Build payloads. Prayer notification ALWAYS wins over ayah.
+    // Build payloads. Ayah is intentionally sent every scheduled cron run
+    // during this test period; prayer can be sent additionally when matched.
     const payloads: Array<{
       title: string
       body: string
@@ -229,7 +229,8 @@ export async function GET(req: NextRequest) {
         // Same tag for one prayer per day, so duplicate cron runs replace
         tag: `prayer-${prayerMatch.label.toLowerCase()}-${dateStr}`,
       })
-    } else if (ayahPayload) {
+    }
+    if (ayahPayload) {
       payloads.push(ayahPayload)
     }
 
@@ -267,7 +268,8 @@ export async function GET(req: NextRequest) {
     gone: totalGone,
     users: subsByUser.size,
     window_min: PRAYER_WINDOW_MIN,
-    is_top_of_hour: isTopOfHour,
+    ayah_interval_min: AYAH_INTERVAL_MIN,
+    ayah_bucket: ayahBucket,
     now: `${String(curHM.h).padStart(2, '0')}:${String(curHM.m).padStart(2, '0')}`,
     debug,
   })

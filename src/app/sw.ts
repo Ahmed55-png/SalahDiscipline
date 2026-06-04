@@ -60,6 +60,7 @@ type PushPayload = {
   title?: string
   body?: string
   prayer?: string
+  tag?: string
   url?: string
 }
 
@@ -79,7 +80,7 @@ self.addEventListener('push', (event) => {
       body,
       icon: '/icon',
       badge: '/icon',
-      tag: payload.prayer ?? 'salah-notification',
+      tag: payload.tag ?? payload.prayer ?? 'salah-notification',
       data: { url: payload.url ?? '/dashboard' },
       requireInteraction: false,
     })

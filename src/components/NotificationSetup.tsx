@@ -23,10 +23,10 @@ export function NotificationSetup() {
   useEffect(() => {
     if (typeof window === 'undefined') return
     if (!('Notification' in window) || !('serviceWorker' in navigator)) {
-      setPermission('unsupported')
+      queueMicrotask(() => setPermission('unsupported'))
       return
     }
-    setPermission(Notification.permission)
+    queueMicrotask(() => setPermission(Notification.permission))
     void navigator.serviceWorker.ready.then(async (reg) => {
       const sub = await reg.pushManager.getSubscription()
       setPushSubscribed(!!sub)
@@ -160,7 +160,7 @@ export function NotificationSetup() {
           </h3>
           <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
             {pushSubscribed
-              ? '✓ Subscribed — prayer + hourly ayah reminders'
+              ? '✓ Subscribed — prayer + 10-minute ayah test reminders'
               : t('notif.hint')}
           </p>
 

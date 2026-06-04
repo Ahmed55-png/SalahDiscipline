@@ -52,9 +52,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     } catch {
       /* ignore */
     }
-    setThemeState(initial)
     applyTheme(initial)
-    setResolved(initial === 'system' ? readSystemPref() : initial)
+    queueMicrotask(() => {
+      setThemeState(initial)
+      setResolved(initial === 'system' ? readSystemPref() : initial)
+    })
   }, [])
 
   // Listen to system pref changes when in system mode
