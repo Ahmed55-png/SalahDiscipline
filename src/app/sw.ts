@@ -45,12 +45,9 @@ self.addEventListener('activate', (event) => {
       const clients = await self.clients.matchAll({ type: 'window' })
       for (const client of clients) {
         try {
-          // @ts-expect-error navigate exists on WindowClient
-          if ('navigate' in client && typeof client.navigate === 'function') {
-            await client.navigate(client.url)
-          }
+          await client.navigate(client.url)
         } catch {
-          /* ignore — some clients may not allow navigate */
+          /* ignore — some clients (cross-origin etc.) refuse navigate */
         }
       }
     })()
