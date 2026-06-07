@@ -73,7 +73,7 @@ self.addEventListener('push', (event) => {
   }
 
   const title = payload.title ?? 'Salah Discipline'
-  const body = payload.body ?? 'Namaz ka waqt ho gaya'
+  const body = payload.body ?? 'A reminder to stay close to Allah.'
   const isPrayer = !!payload.prayer
   const options: NotificationOptions & {
     renotify?: boolean

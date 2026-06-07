@@ -310,8 +310,8 @@ export async function sendReminderCheckAction(): Promise<{
     const prayer = await getPrayerMatch(profile, now)
     if (prayer) {
       payloads.push({
-        title: `Adhan - ${prayer.label} time`,
-        body: `Namaz ka waqt ho gaya. Tap to open the app and play adhan.`,
+        title: `${prayer.label} · ${prayer.time}`,
+        body: `It's time for ${prayer.label}. Tap to play the adhan and mark your prayer.`,
         prayer: prayer.label.toLowerCase(),
         url: `/dashboard?adhan=${prayer.label.toLowerCase()}`,
         tag: `prayer-${prayer.label.toLowerCase()}-${prayer.date}`,

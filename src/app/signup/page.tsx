@@ -5,6 +5,7 @@ import { useActionState } from 'react'
 import { signupAction, type SignupState } from './actions'
 import { AuthShell, AuthInput, AuthSubmit } from '@/components/AuthShell'
 import { RotatingGreeting } from '@/components/RotatingGreeting'
+import { OAuthButtons } from '@/components/OAuthButtons'
 
 const initialState: SignupState = { error: null }
 
@@ -65,6 +66,8 @@ export default function SignupPage() {
           label="Create Account"
         />
       </form>
+
+      <OAuthButtons />
 
       <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
         Already have an account?{' '}
