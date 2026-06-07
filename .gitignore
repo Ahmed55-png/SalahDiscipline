@@ -47,3 +47,11 @@ dev.log
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Never commit recovery codes / private credentials accidentally
+**/backup-codes*.txt
+**/recovery-codes*.txt
+**/Backup-codes*.txt
+**/*-recovery-codes.txt
+**/credentials.json
+**/*.pem
