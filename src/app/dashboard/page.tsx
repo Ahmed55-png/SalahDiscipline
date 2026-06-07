@@ -72,7 +72,7 @@ export default async function DashboardPage() {
     supabase
       .from('profiles')
       .select(
-        'username, city, country, calculation_method, latitude, longitude, location_label'
+        'username, city, country, calculation_method, latitude, longitude, location_label, onboarding_completed'
       )
       .eq('id', user.id)
       .single(),
@@ -95,6 +95,12 @@ export default async function DashboardPage() {
       .lte('prayer_date', weekEndIso),
     getAyahWithTranslation(ayahNumber),
   ])
+
+  // Onboarding gate: if the new user hasn't filled the form yet, force them to.
+  // We only redirect after fetching to avoid an extra round trip on every page load.
+  if (profile && (profile as { onboarding_completed?: boolean }).onboarding_completed === false) {
+    redirect('/onboarding')
+  }
 
   const weekByDate = new Map<string, DayStatuses>()
   for (const row of weekRows ?? []) {
