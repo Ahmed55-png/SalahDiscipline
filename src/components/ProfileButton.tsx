@@ -15,6 +15,10 @@ type Props = {
   hasCoords: boolean
   latitude: number | null
   longitude: number | null
+  displayName: string | null
+  bio: string | null
+  age: number | null
+  gender: 'male' | 'female' | 'prefer_not_to_say' | null
 }
 
 export function ProfileButton(props: Props) {

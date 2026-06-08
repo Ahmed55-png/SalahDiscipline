@@ -72,7 +72,7 @@ export default async function DashboardPage() {
     supabase
       .from('profiles')
       .select(
-        'username, city, country, calculation_method, latitude, longitude, location_label, onboarding_completed'
+        'username, city, country, calculation_method, latitude, longitude, location_label, onboarding_completed, display_name, bio, age, gender'
       )
       .eq('id', user.id)
       .single(),
@@ -183,6 +183,17 @@ export default async function DashboardPage() {
           hasCoords={hasCoords}
           latitude={lat}
           longitude={lon}
+          displayName={
+            (profile as { display_name?: string | null } | null)
+              ?.display_name ?? null
+          }
+          bio={(profile as { bio?: string | null } | null)?.bio ?? null}
+          age={(profile as { age?: number | null } | null)?.age ?? null}
+          gender={
+            (profile as {
+              gender?: 'male' | 'female' | 'prefer_not_to_say' | null
+            } | null)?.gender ?? null
+          }
         />
 
         <NotificationHeartbeat />

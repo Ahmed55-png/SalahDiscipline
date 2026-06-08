@@ -7,6 +7,7 @@ import { useLanguage } from './LanguageProvider'
 import { NotificationSetup } from './NotificationSetup'
 import { LocationSetup } from './LocationSetup'
 import { AzanPlayer } from './AzanPlayer'
+import { ProfileEditForm } from './ProfileEditForm'
 
 type Props = {
   open: boolean
@@ -21,9 +22,13 @@ type Props = {
   hasCoords: boolean
   latitude: number | null
   longitude: number | null
+  displayName: string | null
+  bio: string | null
+  age: number | null
+  gender: 'male' | 'female' | 'prefer_not_to_say' | null
 }
 
-type Panel = 'menu' | 'location' | 'notifications' | 'azan'
+type Panel = 'menu' | 'edit' | 'location' | 'notifications' | 'azan'
 
 export function ProfileDrawer({
   open,
@@ -38,6 +43,10 @@ export function ProfileDrawer({
   hasCoords,
   latitude,
   longitude,
+  displayName,
+  bio,
+  age,
+  gender,
 }: Props) {
   const { t, isUrdu } = useLanguage()
   const [panel, setPanel] = useState<Panel>('menu')
@@ -65,13 +74,15 @@ export function ProfileDrawer({
   }, [open])
 
   const panelTitle =
-    panel === 'location'
-      ? 'Location'
-      : panel === 'notifications'
-        ? 'Namaz Reminders'
-        : panel === 'azan'
-          ? 'Azan'
-          : t('profile.title')
+    panel === 'edit'
+      ? 'Edit Profile'
+      : panel === 'location'
+        ? 'Location'
+        : panel === 'notifications'
+          ? 'Namaz Reminders'
+          : panel === 'azan'
+            ? 'Azan'
+            : t('profile.title')
 
   return (
     <AnimatePresence>
@@ -130,16 +141,59 @@ export function ProfileDrawer({
               {panel === 'menu' ? (
                 <>
                   <div className="flex flex-col items-center gap-3 pt-2">
-                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-brand via-emerald-deep to-emerald-brand flex items-center justify-center text-cream text-4xl font-bold shadow-lg shadow-emerald-deep/30 ring-4 ring-gold/40">
-                      {initial}
+                    <div className="relative">
+                      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-brand via-emerald-deep to-emerald-brand flex items-center justify-center text-cream text-4xl font-bold shadow-lg shadow-emerald-deep/30 ring-4 ring-gold/40">
+                        {initial}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPanel('edit')}
+                        aria-label="Edit profile"
+                        className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-gold text-emerald-deep shadow-md shadow-gold/30 ring-2 ring-cream dark:ring-[#0A1F1A] flex items-center justify-center hover:bg-gold-light transition-colors"
+                      >
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden
+                        >
+                          <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+                        </svg>
+                      </button>
                     </div>
                     <div className="text-center">
                       <h3 className="text-xl font-bold text-emerald-deep dark:text-emerald-200">
-                        {username}
+                        {displayName || username}
                       </h3>
+                      {displayName && (
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                          @{username}
+                        </p>
+                      )}
                       {email && (
                         <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 break-all">
                           {email}
+                        </p>
+                      )}
+                      {bio && (
+                        <p className="text-xs text-zinc-700 dark:text-zinc-300 mt-2 px-4 italic">
+                          “{bio}”
+                        </p>
+                      )}
+                      {(age != null || gender) && (
+                        <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1.5 flex items-center justify-center gap-2">
+                          {age != null && <span>{age} years</span>}
+                          {age != null && gender && <span aria-hidden>·</span>}
+                          {gender && (
+                            <span className="capitalize">
+                              {gender.replace(/_/g, ' ')}
+                            </span>
+                          )}
                         </p>
                       )}
                     </div>
@@ -198,6 +252,18 @@ export function ProfileDrawer({
                     </button>
                   </form>
                 </>
+              ) : panel === 'edit' ? (
+                <ProfileEditForm
+                  initial={{
+                    username,
+                    displayName,
+                    bio,
+                    age,
+                    gender,
+                  }}
+                  onDone={() => setPanel('menu')}
+                  onCancel={() => setPanel('menu')}
+                />
               ) : panel === 'location' ? (
                 <LocationSetup
                   currentLabel={locationLabel ?? `${city}, ${country}`}
