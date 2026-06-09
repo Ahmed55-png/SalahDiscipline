@@ -4,60 +4,12 @@ import Link from 'next/link'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLanguage } from '@/components/LanguageProvider'
+import { AdhkarDrawer } from '@/components/AdhkarDrawer'
+import { ZIKR_LIST, zikrById, type Zikr } from '@/lib/zikr/list'
+import { useOpenOnParam } from '@/lib/hooks/useOpenOnParam'
+import { BottomNav } from '@/components/BottomNav'
 
-type Zikr = {
-  id: string
-  arabic: string
-  translit: string
-  urdu: string
-  english: string
-  target: number
-}
-
-const ZIKRS: Zikr[] = [
-  {
-    id: 'subhanallah',
-    arabic: 'سُبْحَانَ ٱللَّٰهِ',
-    translit: 'SubhanAllah',
-    urdu: 'اللہ پاک ہے',
-    english: 'Glory be to Allah',
-    target: 33,
-  },
-  {
-    id: 'alhamdulillah',
-    arabic: 'ٱلْحَمْدُ لِلَّٰهِ',
-    translit: 'Alhamdulillah',
-    urdu: 'تمام تعریفیں اللہ کے لیے',
-    english: 'All praise is for Allah',
-    target: 33,
-  },
-  {
-    id: 'allahuakbar',
-    arabic: 'ٱللَّٰهُ أَكْبَرُ',
-    translit: 'Allahu Akbar',
-    urdu: 'اللہ سب سے بڑا ہے',
-    english: 'Allah is the greatest',
-    target: 34,
-  },
-  {
-    id: 'lailaha',
-    arabic: 'لَا إِلَٰهَ إِلَّا ٱللَّٰهُ',
-    translit: 'La ilaha illa Allah',
-    urdu: 'اللہ کے سوا کوئی معبود نہیں',
-    english: 'There is no god but Allah',
-    target: 100,
-  },
-  {
-    id: 'astaghfirullah',
-    arabic: 'أَسْتَغْفِرُ ٱللَّٰهَ',
-    translit: 'Astaghfirullah',
-    urdu: 'میں اللہ سے بخشش مانگتا ہوں',
-    english: 'I seek forgiveness from Allah',
-    target: 100,
-  },
-]
-
-const STORAGE_KEY = 'salah:tasbih-v1'
+const STORAGE_KEY = 'salah:tasbih-v2'
 
 type Saved = {
   zikrId: string
@@ -67,15 +19,14 @@ type Saved = {
 
 export default function TasbihPage() {
   const { isUrdu } = useLanguage()
-  const [zikrIndex, setZikrIndex] = useState(0)
+  const [zikr, setZikr] = useState<Zikr>(ZIKR_LIST[0])
   const [count, setCount] = useState(0)
   const [rounds, setRounds] = useState(0)
   const [hydrated, setHydrated] = useState(false)
   const [justCompleted, setJustCompleted] = useState(false)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  useOpenOnParam('adhkar', setDrawerOpen)
   const beadRef = useRef<HTMLButtonElement | null>(null)
-
-  const zikr = ZIKRS[zikrIndex]
-  const target = zikr.target
 
   // Load persisted state
   useEffect(() => {
@@ -83,8 +34,8 @@ export default function TasbihPage() {
       const raw = localStorage.getItem(STORAGE_KEY)
       if (raw) {
         const saved = JSON.parse(raw) as Saved
-        const idx = ZIKRS.findIndex((z) => z.id === saved.zikrId)
-        if (idx >= 0) setZikrIndex(idx)
+        const found = zikrById(saved.zikrId)
+        if (found) setZikr(found)
         if (typeof saved.count === 'number') setCount(saved.count)
         if (typeof saved.rounds === 'number') setRounds(saved.rounds)
       }
@@ -113,23 +64,22 @@ export default function TasbihPage() {
     }
     setCount((c) => {
       const next = c + 1
-      if (next >= target) {
+      if (next >= zikr.target) {
         setRounds((r) => r + 1)
         setJustCompleted(true)
         if (typeof navigator !== 'undefined' && navigator.vibrate) {
           navigator.vibrate([60, 40, 60, 40, 100])
         }
-        // Auto-reset to 0 to start next round
         setTimeout(() => setJustCompleted(false), 1400)
         return 0
       }
       return next
     })
-  }, [target])
+  }, [zikr.target])
 
-  const selectZikr = (i: number) => {
-    if (i === zikrIndex) return
-    setZikrIndex(i)
+  const selectZikr = (z: Zikr) => {
+    if (z.id === zikr.id) return
+    setZikr(z)
     setCount(0)
   }
 
@@ -138,10 +88,13 @@ export default function TasbihPage() {
     setRounds(0)
   }
 
-  // Spacebar / Enter to count (keyboard accessibility)
+  // Keyboard: Space / Enter on focused bead
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.key === ' ' || e.key === 'Enter') && document.activeElement === beadRef.current) {
+      if (
+        (e.key === ' ' || e.key === 'Enter') &&
+        document.activeElement === beadRef.current
+      ) {
         e.preventDefault()
         handleTap()
       }
@@ -150,8 +103,21 @@ export default function TasbihPage() {
     return () => window.removeEventListener('keydown', onKey)
   }, [handleTap])
 
+  // First 4 most-common dhikr for the pill bar — rest live in the drawer
+  const quickIds = [
+    'subhanallah',
+    'alhamdulillah',
+    'allahuakbar',
+    'durood-short',
+  ]
+  const quickPills = quickIds
+    .map((id) => zikrById(id))
+    .filter(Boolean) as Zikr[]
+  // Make sure currently-selected zikr is visible if it's not in the quick list
+  const showSelectedInPills = !quickIds.includes(zikr.id)
+
   return (
-    <main className="relative min-h-screen overflow-hidden flex flex-col">
+    <main className="relative min-h-screen overflow-hidden flex flex-col pb-24">
       <div className="absolute inset-0 islamic-pattern opacity-40 pointer-events-none" />
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cream/50 to-cream dark:via-[#0A1F1A]/50 dark:to-[#0A1F1A] pointer-events-none" />
 
@@ -177,15 +143,15 @@ export default function TasbihPage() {
           </div>
         </header>
 
-        {/* Zikr selector */}
+        {/* Quick pill bar + "All adhkar" trigger */}
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 snap-x">
-          {ZIKRS.map((z, i) => (
+          {quickPills.map((z) => (
             <button
               key={z.id}
               type="button"
-              onClick={() => selectZikr(i)}
+              onClick={() => selectZikr(z)}
               className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold transition-colors snap-start ${
-                i === zikrIndex
+                z.id === zikr.id
                   ? 'bg-emerald-brand text-cream shadow-md shadow-emerald-brand/30'
                   : 'border border-emerald-brand/30 text-emerald-deep dark:text-emerald-200 hover:bg-emerald-brand/10'
               }`}
@@ -193,9 +159,24 @@ export default function TasbihPage() {
               {z.translit}
             </button>
           ))}
+          {showSelectedInPills && (
+            <button
+              type="button"
+              className="whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold bg-emerald-brand text-cream shadow-md shadow-emerald-brand/30 snap-start"
+            >
+              {zikr.translit}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setDrawerOpen(true)}
+            className="whitespace-nowrap rounded-full border-2 border-gold/60 text-gold dark:text-gold-light px-3 py-1.5 text-xs font-semibold hover:bg-gold/10 transition-colors snap-start"
+          >
+            All adhkar →
+          </button>
         </div>
 
-        {/* Counter display */}
+        {/* Counter card */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -212,7 +193,7 @@ export default function TasbihPage() {
                   {count}
                 </span>
                 <span className="text-sm text-emerald-deep/60 dark:text-emerald-300/60">
-                  / {target}
+                  / {zikr.target}
                 </span>
               </div>
             </div>
@@ -226,11 +207,12 @@ export default function TasbihPage() {
             </div>
           </div>
 
-          {/* Progress bar */}
           <div className="relative mt-4 h-1.5 rounded-full bg-zinc-200/60 dark:bg-zinc-800/60 overflow-hidden">
             <motion.div
               className="h-full bg-gradient-to-r from-emerald-brand to-gold rounded-full"
-              animate={{ width: `${Math.min(100, (count / target) * 100)}%` }}
+              animate={{
+                width: `${Math.min(100, (count / zikr.target) * 100)}%`,
+              }}
               transition={{ type: 'spring', stiffness: 240, damping: 28 }}
             />
           </div>
@@ -244,7 +226,7 @@ export default function TasbihPage() {
             animate={{ opacity: 1, y: 0 }}
             dir="rtl"
             lang="ar"
-            className="text-3xl sm:text-4xl text-emerald-deep dark:text-gold-soft leading-loose"
+            className="text-2xl sm:text-3xl text-emerald-deep dark:text-gold-soft leading-loose"
             style={{ fontFamily: 'var(--font-amiri)' }}
           >
             {zikr.arabic}
@@ -259,13 +241,13 @@ export default function TasbihPage() {
               {zikr.urdu}
             </p>
           ) : (
-            <p className="text-sm text-zinc-700 dark:text-zinc-300 italic">
+            <p className="text-xs sm:text-sm text-zinc-700 dark:text-zinc-300 italic px-2">
               &ldquo;{zikr.english}&rdquo;
             </p>
           )}
         </div>
 
-        {/* The bead — main tap target */}
+        {/* The bead */}
         <div className="flex-1 flex items-center justify-center min-h-[180px]">
           <motion.button
             ref={beadRef}
@@ -276,13 +258,9 @@ export default function TasbihPage() {
             className="relative group focus:outline-none"
             aria-label="Tap to count"
           >
-            {/* Outer glow ring */}
             <div className="absolute inset-0 rounded-full bg-gold/30 blur-2xl group-active:bg-gold/50 transition-colors" />
-            {/* Bead body */}
             <div className="relative w-44 h-44 sm:w-52 sm:h-52 rounded-full bg-gradient-to-br from-gold via-gold-light to-gold flex items-center justify-center shadow-2xl shadow-gold/40 ring-4 ring-emerald-deep/20 group-active:ring-emerald-deep/40 transition-shadow">
-              {/* Inner darker circle */}
               <div className="absolute inset-3 rounded-full bg-gradient-to-br from-emerald-deep via-emerald-brand to-emerald-deep flex items-center justify-center">
-                {/* Star pattern in center */}
                 <svg width="80" height="80" viewBox="0 0 100 100" aria-hidden>
                   <path
                     d="M50 12 L58 26 L74 26 L74 42 L88 50 L74 58 L74 74 L58 74 L50 88 L42 74 L26 74 L26 58 L12 50 L26 42 L26 26 L42 26 Z"
@@ -310,19 +288,27 @@ export default function TasbihPage() {
             Tap the bead to count
           </p>
           <div className="text-[10px] uppercase tracking-widest text-gold dark:text-gold-light/80 font-semibold">
-            {count}/{target}
+            {count}/{zikr.target}
           </div>
         </div>
       </div>
 
-      {/* Round complete celebration */}
+      {/* Adhkar drawer */}
+      <AdhkarDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        activeId={zikr.id}
+        onSelect={selectZikr}
+      />
+
+      {/* Round complete toast */}
       <AnimatePresence>
         {justCompleted && (
           <motion.div
             initial={{ opacity: 0, scale: 0.7, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: -20 }}
-            className="fixed inset-x-4 bottom-24 sm:left-1/2 sm:right-auto sm:bottom-32 sm:-translate-x-1/2 sm:max-w-sm z-50"
+            className="fixed inset-x-4 bottom-32 sm:left-1/2 sm:right-auto sm:bottom-40 sm:-translate-x-1/2 sm:max-w-sm z-50"
           >
             <div className="rounded-2xl border-2 border-gold/60 bg-gradient-to-br from-gold-soft/80 via-white to-emerald-50 dark:from-gold/20 dark:via-emerald-deep/40 dark:to-emerald-deep/60 p-4 shadow-2xl shadow-emerald-deep/30 text-center">
               <span className="text-2xl flame-pulse inline-block" aria-hidden>
@@ -338,6 +324,8 @@ export default function TasbihPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <BottomNav />
     </main>
   )
 }

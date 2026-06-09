@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { ProfileDrawer } from './ProfileDrawer'
+import { useOpenOnParam } from '@/lib/hooks/useOpenOnParam'
 
 type Props = {
   username: string
@@ -23,6 +24,7 @@ type Props = {
 
 export function ProfileButton(props: Props) {
   const [open, setOpen] = useState(false)
+  useOpenOnParam('profile', setOpen)
   const initial = (props.username[0] ?? '?').toUpperCase()
 
   return (

@@ -11,6 +11,7 @@ import { SubscribeBanner } from '@/components/SubscribeBanner'
 import { getTimingsByCoordinates } from '@/lib/api/aladhan'
 import { LastWeekStrip, type WeekDay } from '@/components/LastWeekStrip'
 import { TasbihLauncher } from '@/components/TasbihLauncher'
+import { BottomNav } from '@/components/BottomNav'
 import { DashboardHeader } from '@/components/DashboardHeader'
 import { NotificationHeartbeat } from '@/components/NotificationHeartbeat'
 import {
@@ -172,7 +173,7 @@ export default async function DashboardPage() {
       <div className="absolute inset-0 islamic-pattern opacity-40 pointer-events-none" />
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cream/40 to-cream dark:via-[#0A1F1A]/40 dark:to-[#0A1F1A] pointer-events-none" />
 
-      <div className="relative z-10 max-w-2xl mx-auto p-4 sm:p-6 space-y-6">
+      <div className="relative z-10 max-w-2xl mx-auto p-4 sm:p-6 pb-28 space-y-6">
         <DashboardHeader
           username={profile?.username ?? 'friend'}
           email={user.email ?? null}
@@ -241,6 +242,8 @@ export default async function DashboardPage() {
           </FadeIn>
         )}
       </div>
+
+      <BottomNav />
     </main>
   )
 }
