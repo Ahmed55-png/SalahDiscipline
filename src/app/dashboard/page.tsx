@@ -10,6 +10,7 @@ import { PrayerTimeWatcher } from '@/components/PrayerTimeWatcher'
 import { SubscribeBanner } from '@/components/SubscribeBanner'
 import { getTimingsByCoordinates } from '@/lib/api/aladhan'
 import { LastWeekStrip, type WeekDay } from '@/components/LastWeekStrip'
+import { TasbihLauncher } from '@/components/TasbihLauncher'
 import { DashboardHeader } from '@/components/DashboardHeader'
 import { NotificationHeartbeat } from '@/components/NotificationHeartbeat'
 import {
@@ -217,6 +218,8 @@ export default async function DashboardPage() {
           currentStreak={currentStreak}
           longestStreak={longestStreak}
         />
+
+        <TasbihLauncher />
 
         <InstallPrompt />
 
