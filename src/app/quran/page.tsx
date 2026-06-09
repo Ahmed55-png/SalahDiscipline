@@ -1,15 +1,13 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import {
-  getAyahWithTranslation,
-  randomAyahNumber,
-} from '@/lib/api/quran'
-import { DailyAyah } from '@/components/DailyAyah'
+import { getAllSurahs } from '@/lib/api/quran'
 import { BottomNav } from '@/components/BottomNav'
-import { QuranRefreshButton } from './QuranRefreshButton'
+import { BrowserTabs } from '@/components/quran/BrowserTabs'
+import { SurahList } from '@/components/quran/SurahList'
+import { JuzList } from '@/components/quran/JuzList'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 604800 // 7 days — surah index is static
 
 export default async function QuranPage() {
   const supabase = await createClient()
@@ -18,8 +16,7 @@ export default async function QuranPage() {
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // Server-side random ayah; router.refresh() on the client gives a new one.
-  const ayah = await getAyahWithTranslation(randomAyahNumber())
+  const surahs = await getAllSurahs()
 
   return (
     <main className="relative min-h-screen overflow-hidden pb-28">
@@ -27,7 +24,6 @@ export default async function QuranPage() {
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cream/50 to-cream dark:via-[#0A1F1A]/50 dark:to-[#0A1F1A] pointer-events-none" />
 
       <div className="relative z-10 max-w-2xl mx-auto w-full px-4 py-5 space-y-5">
-        {/* Header */}
         <header className="flex items-center justify-between">
           <Link
             href="/dashboard"
@@ -48,8 +44,7 @@ export default async function QuranPage() {
           </div>
         </header>
 
-        {/* Hero */}
-        <section className="text-center pt-2">
+        <section className="text-center pt-1">
           <p
             className="text-3xl sm:text-4xl text-emerald-deep dark:text-gold-soft leading-relaxed"
             style={{ fontFamily: 'var(--font-amiri)' }}
@@ -62,38 +57,17 @@ export default async function QuranPage() {
           </p>
         </section>
 
-        {/* Featured ayah */}
-        {ayah ? (
-          <DailyAyah ayah={ayah} />
+        {surahs ? (
+          <BrowserTabs
+            surahs={<SurahList surahs={surahs} />}
+            paras={<JuzList />}
+          />
         ) : (
-          <p className="text-center text-sm text-zinc-500 dark:text-zinc-400 italic">
-            Ayah couldn&apos;t be loaded right now. Try refreshing.
+          <p className="text-center text-sm text-zinc-500 dark:text-zinc-400 italic py-6">
+            Couldn&apos;t load the Quran index right now. Please try again
+            shortly.
           </p>
         )}
-
-        {/* Refresh */}
-        <div className="flex justify-center">
-          <QuranRefreshButton />
-        </div>
-
-        {/* Roadmap card */}
-        <section className="relative overflow-hidden rounded-2xl border border-gold/30 bg-white/70 dark:bg-[#0F2A22]/70 backdrop-blur-md p-4">
-          <div className="absolute inset-0 islamic-pattern-dense opacity-[0.06] pointer-events-none" />
-          <div className="relative flex items-start gap-3">
-            <div className="text-2xl" aria-hidden>
-              📖
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-emerald-deep dark:text-emerald-200">
-                Surah browser coming soon
-              </h3>
-              <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
-                A full 114-surah index with Arabic, Urdu translation, and
-                bookmarks. For now, refresh above to get a fresh ayah.
-              </p>
-            </div>
-          </div>
-        </section>
       </div>
 
       <BottomNav />
