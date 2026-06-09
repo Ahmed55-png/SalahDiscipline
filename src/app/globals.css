@@ -68,8 +68,13 @@ body {
   background-size: 40px 40px;
 }
 
-/* Quran reading-mode: hide Urdu blocks when Mushaf mode is on */
-[data-quran-mode="mushaf"] [data-urdu-block] {
+/* Quran reading-mode:
+   - Translation view: per-ayah cards (default)
+   - Mushaf view: continuous Arabic paragraph, no Urdu */
+[data-quran-mode="mushaf"] [data-translation-view] {
+  display: none;
+}
+[data-quran-mode="translation"] [data-mushaf-view] {
   display: none;
 }
 

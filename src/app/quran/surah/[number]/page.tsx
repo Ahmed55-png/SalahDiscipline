@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getSurahWithTranslation } from '@/lib/api/quran'
 import { BottomNav } from '@/components/BottomNav'
 import { ReadingMode } from '@/components/quran/ReadingMode'
+import { toArabicDigits, stripBismillah } from '@/lib/quran/format'
 
 export const revalidate = 604800
 
@@ -92,53 +93,82 @@ export default async function SurahPage({
             </section>
 
             <ReadingMode>
-            <section className="space-y-4">
-              {pair.arabic.ayahs.map((aya, i) => {
-                const ur = pair.urdu.ayahs[i]
-                // For surahs other than 1 & 9, the first ayah from the API
-                // includes the Bismillah text — strip it so we don't show it
-                // twice (we already rendered it above).
-                const arabicText =
-                  i === 0 && n !== 1 && n !== 9
-                    ? aya.text.replace(
-                        /^بِسْمِ\s+ٱللَّ?ٰ?هِ\s+ٱلرَّحْمَ?ٰ?نِ\s+ٱلرَّحِيمِ\s*/u,
-                        ''
-                      )
-                    : aya.text
-                return (
-                  <article
-                    key={aya.number}
-                    className="rounded-2xl border border-emerald-brand/20 bg-white/85 dark:bg-[#0F2A22]/70 backdrop-blur-md p-4 space-y-3"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-emerald-deep to-emerald-brand text-cream text-[10px] font-bold tabular-nums">
-                        {aya.numberInSurah}
-                      </span>
-                      <span className="text-[10px] uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
-                        Juz {aya.juz}
-                      </span>
-                    </div>
-                    <p
-                      className="text-2xl sm:text-3xl text-zinc-900 dark:text-gold-soft leading-loose text-right"
-                      style={{ fontFamily: 'var(--font-amiri)' }}
-                      dir="rtl"
+              {/* Translation view — per-ayah cards */}
+              <section data-translation-view className="space-y-4">
+                {pair.arabic.ayahs.map((aya, i) => {
+                  const ur = pair.urdu.ayahs[i]
+                  const arabicText =
+                    i === 0 && n !== 1 && n !== 9
+                      ? stripBismillah(aya.text)
+                      : aya.text
+                  return (
+                    <article
+                      key={aya.number}
+                      className="rounded-2xl border border-emerald-brand/20 bg-white/85 dark:bg-[#0F2A22]/70 backdrop-blur-md p-4 space-y-3"
                     >
-                      {arabicText}
-                    </p>
-                    {ur && (
+                      <div className="flex items-center justify-between">
+                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-emerald-deep to-emerald-brand text-cream text-[10px] font-bold tabular-nums">
+                          {aya.numberInSurah}
+                        </span>
+                        <span className="text-[10px] uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+                          Juz {aya.juz}
+                        </span>
+                      </div>
                       <p
-                        data-urdu-block
-                        className="text-base text-zinc-700 dark:text-zinc-300 leading-loose text-right pt-1 border-t border-emerald-brand/10"
-                        style={{ fontFamily: 'var(--font-nastaliq)' }}
+                        className="text-2xl sm:text-3xl text-zinc-900 dark:text-gold-soft leading-loose text-right"
+                        style={{ fontFamily: 'var(--font-amiri)' }}
                         dir="rtl"
                       >
-                        {ur.text}
+                        {arabicText}
                       </p>
-                    )}
-                  </article>
-                )
-              })}
-            </section>
+                      {ur && (
+                        <p
+                          className="text-base text-zinc-700 dark:text-zinc-300 leading-loose text-right pt-1 border-t border-emerald-brand/10"
+                          style={{ fontFamily: 'var(--font-nastaliq)' }}
+                          dir="rtl"
+                        >
+                          {ur.text}
+                        </p>
+                      )}
+                    </article>
+                  )
+                })}
+              </section>
+
+              {/* Mushaf view — continuous flowing Arabic, no translation */}
+              <section
+                data-mushaf-view
+                className="rounded-2xl border border-gold/30 bg-gradient-to-br from-cream via-white to-gold-soft/30 dark:from-[#0F2A22] dark:via-[#0A1F1A] dark:to-emerald-deep/30 p-5 sm:p-7 shadow-lg shadow-emerald-deep/10"
+              >
+                <p
+                  className="text-2xl sm:text-3xl text-zinc-900 dark:text-gold-soft text-justify"
+                  style={{
+                    fontFamily: 'var(--font-amiri)',
+                    lineHeight: 2.4,
+                    wordSpacing: '0.15em',
+                  }}
+                  dir="rtl"
+                  lang="ar"
+                >
+                  {pair.arabic.ayahs.map((aya, i) => {
+                    const arabicText =
+                      i === 0 && n !== 1 && n !== 9
+                        ? stripBismillah(aya.text)
+                        : aya.text
+                    return (
+                      <span key={aya.number}>
+                        {arabicText}{' '}
+                        <span
+                          className="inline-flex items-center justify-center align-middle mx-1 text-gold dark:text-gold-light text-base sm:text-lg"
+                          aria-label={`Ayah ${aya.numberInSurah}`}
+                        >
+                          ﴿{toArabicDigits(aya.numberInSurah)}﴾
+                        </span>{' '}
+                      </span>
+                    )
+                  })}
+                </p>
+              </section>
             </ReadingMode>
 
             <nav className="flex items-center justify-between pt-2">

@@ -5,6 +5,7 @@ import { getJuzWithTranslation } from '@/lib/api/quran'
 import { BottomNav } from '@/components/BottomNav'
 import { ReadingMode } from '@/components/quran/ReadingMode'
 import { JUZ_LIST } from '@/lib/quran/juz'
+import { toArabicDigits } from '@/lib/quran/format'
 
 export const revalidate = 604800
 
@@ -115,59 +116,106 @@ export default async function JuzPage({
         ) : (
           <>
           <ReadingMode>
-          <div className="space-y-6">
-            {groups.map((g) => (
-              <section key={g.surah.number} className="space-y-3">
-                <div className="flex items-baseline justify-between gap-3 px-1">
-                  <Link
-                    href={`/quran/surah/${g.surah.number}`}
-                    className="text-sm font-semibold text-emerald-deep dark:text-emerald-200 hover:text-gold dark:hover:text-gold-light transition-colors"
-                  >
-                    {g.surah.number}. {g.surah.englishName}
-                  </Link>
-                  <span
-                    className="text-xl text-gold dark:text-gold-light"
-                    style={{ fontFamily: 'var(--font-amiri)' }}
-                    dir="rtl"
-                  >
-                    {g.surah.name}
-                  </span>
-                </div>
-                {g.items.map((aya) => (
-                  <article
-                    key={aya.number}
-                    className="rounded-2xl border border-emerald-brand/20 bg-white/85 dark:bg-[#0F2A22]/70 backdrop-blur-md p-4 space-y-3"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-emerald-deep to-emerald-brand text-cream text-[10px] font-bold tabular-nums">
-                        {aya.numberInSurah}
-                      </span>
-                      <span className="text-[10px] uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
-                        Ayah #{aya.number}
-                      </span>
-                    </div>
-                    <p
-                      className="text-2xl sm:text-3xl text-zinc-900 dark:text-gold-soft leading-loose text-right"
+            {/* Translation view — per-ayah cards grouped by surah */}
+            <div data-translation-view className="space-y-6">
+              {groups.map((g) => (
+                <section key={g.surah.number} className="space-y-3">
+                  <div className="flex items-baseline justify-between gap-3 px-1">
+                    <Link
+                      href={`/quran/surah/${g.surah.number}`}
+                      className="text-sm font-semibold text-emerald-deep dark:text-emerald-200 hover:text-gold dark:hover:text-gold-light transition-colors"
+                    >
+                      {g.surah.number}. {g.surah.englishName}
+                    </Link>
+                    <span
+                      className="text-xl text-gold dark:text-gold-light"
                       style={{ fontFamily: 'var(--font-amiri)' }}
                       dir="rtl"
                     >
-                      {aya.arabic}
-                    </p>
-                    {aya.urdu && (
+                      {g.surah.name}
+                    </span>
+                  </div>
+                  {g.items.map((aya) => (
+                    <article
+                      key={aya.number}
+                      className="rounded-2xl border border-emerald-brand/20 bg-white/85 dark:bg-[#0F2A22]/70 backdrop-blur-md p-4 space-y-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-emerald-deep to-emerald-brand text-cream text-[10px] font-bold tabular-nums">
+                          {aya.numberInSurah}
+                        </span>
+                        <span className="text-[10px] uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+                          Ayah #{aya.number}
+                        </span>
+                      </div>
                       <p
-                        data-urdu-block
-                        className="text-base text-zinc-700 dark:text-zinc-300 leading-loose text-right pt-1 border-t border-emerald-brand/10"
-                        style={{ fontFamily: 'var(--font-nastaliq)' }}
+                        className="text-2xl sm:text-3xl text-zinc-900 dark:text-gold-soft leading-loose text-right"
+                        style={{ fontFamily: 'var(--font-amiri)' }}
                         dir="rtl"
                       >
-                        {aya.urdu}
+                        {aya.arabic}
                       </p>
-                    )}
-                  </article>
-                ))}
-              </section>
-            ))}
-          </div>
+                      {aya.urdu && (
+                        <p
+                          className="text-base text-zinc-700 dark:text-zinc-300 leading-loose text-right pt-1 border-t border-emerald-brand/10"
+                          style={{ fontFamily: 'var(--font-nastaliq)' }}
+                          dir="rtl"
+                        >
+                          {aya.urdu}
+                        </p>
+                      )}
+                    </article>
+                  ))}
+                </section>
+              ))}
+            </div>
+
+            {/* Mushaf view — one flowing paragraph per surah */}
+            <div data-mushaf-view className="space-y-6">
+              {groups.map((g) => (
+                <section key={g.surah.number} className="space-y-3">
+                  <div className="flex items-baseline justify-between gap-3 px-1">
+                    <Link
+                      href={`/quran/surah/${g.surah.number}`}
+                      className="text-sm font-semibold text-emerald-deep dark:text-emerald-200 hover:text-gold dark:hover:text-gold-light transition-colors"
+                    >
+                      {g.surah.number}. {g.surah.englishName}
+                    </Link>
+                    <span
+                      className="text-xl text-gold dark:text-gold-light"
+                      style={{ fontFamily: 'var(--font-amiri)' }}
+                      dir="rtl"
+                    >
+                      {g.surah.name}
+                    </span>
+                  </div>
+                  <div className="rounded-2xl border border-gold/30 bg-gradient-to-br from-cream via-white to-gold-soft/30 dark:from-[#0F2A22] dark:via-[#0A1F1A] dark:to-emerald-deep/30 p-5 sm:p-7 shadow-lg shadow-emerald-deep/10">
+                    <p
+                      className="text-2xl sm:text-3xl text-zinc-900 dark:text-gold-soft text-justify"
+                      style={{
+                        fontFamily: 'var(--font-amiri)',
+                        lineHeight: 2.4,
+                        wordSpacing: '0.15em',
+                      }}
+                      dir="rtl"
+                      lang="ar"
+                    >
+                      {g.items.map((aya) => (
+                        <span key={aya.number}>
+                          {aya.arabic}{' '}
+                          <span
+                            className="inline-flex items-center justify-center align-middle mx-1 text-gold dark:text-gold-light text-base sm:text-lg"
+                            aria-label={`Ayah ${aya.numberInSurah}`}
+                          >
+                            ﴿{toArabicDigits(aya.numberInSurah)}﴾
+                          </span>{' '}
+                        </span>
+                      ))}
+                    </p>
+                  </div>
+                </section>
+              ))}
+            </div>
           </ReadingMode>
 
           <nav className="flex items-center justify-between pt-2">

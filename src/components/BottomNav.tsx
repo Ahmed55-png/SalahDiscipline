@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
 
@@ -37,26 +38,28 @@ const BookIcon = () => (
   </svg>
 )
 
-// Quran: bookmarked book / Mushaf
+// Quran: uses /public/book.png
 const QuranIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-    {/* book cover */}
-    <path d="M4 4a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v18l-4-2-4 2-4-2-3 2V4z" />
-    {/* star detail */}
-    <path d="M11 9 L12.5 11 L15 11 L13 12.5 L13.7 15 L11.5 13.7 L9.3 15 L10 12.5 L8 11 L10.5 11 Z" fill="currentColor" stroke="none" opacity="0.45" />
-  </svg>
+  <Image
+    src="/book.png"
+    alt=""
+    width={26}
+    height={26}
+    aria-hidden
+    className="object-contain"
+  />
 )
 
-const TasbihIcon = ({ active }: { active?: boolean }) => (
-  <svg width="32" height="32" viewBox="0 0 100 100" aria-hidden>
-    <path
-      d="M50 14 L58 26 L72 26 L72 40 L86 50 L72 60 L72 74 L58 74 L50 86 L42 74 L28 74 L28 60 L14 50 L28 40 L28 26 L42 26 Z"
-      fill={active ? '#F4D03F' : 'none'}
-      stroke={active ? '#0F5132' : '#F4D03F'}
-      strokeWidth="3"
-    />
-    <circle cx="50" cy="50" r="10" fill={active ? '#0F5132' : '#F4D03F'} />
-  </svg>
+// Tasbih: uses /public/tasbih.png
+const TasbihIcon = () => (
+  <Image
+    src="/tasbih.png"
+    alt=""
+    width={44}
+    height={44}
+    aria-hidden
+    className="object-contain"
+  />
 )
 
 const items: NavItem[] = [
@@ -116,7 +119,7 @@ export function BottomNav() {
                     : 'bg-gradient-to-br from-gold via-gold-light to-gold'
                 }`}
               >
-                <TasbihIcon active={isTasbihActive} />
+                <TasbihIcon />
               </motion.div>
               <span
                 className={`mt-1 block text-center text-[10px] uppercase tracking-widest font-bold ${
