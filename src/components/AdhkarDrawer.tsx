@@ -1,8 +1,10 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ZIKR_LIST, CATEGORY_LABEL, type Zikr } from '@/lib/zikr/list'
+import { useCustomAdhkar } from '@/lib/zikr/custom'
+import { CustomZikrForm } from './CustomZikrForm'
 
 type Props = {
   open: boolean
@@ -12,6 +14,9 @@ type Props = {
 }
 
 export function AdhkarDrawer({ open, onClose, activeId, onSelect }: Props) {
+  const custom = useCustomAdhkar()
+  const [showForm, setShowForm] = useState(false)
+
   // Lock body scroll while open
   useEffect(() => {
     if (open) document.body.style.overflow = 'hidden'
@@ -31,7 +36,12 @@ export function AdhkarDrawer({ open, onClose, activeId, onSelect }: Props) {
     return () => window.removeEventListener('keydown', handler)
   }, [open, onClose])
 
-  // Group by category
+  // Reset form state when drawer closes
+  useEffect(() => {
+    if (!open) setShowForm(false)
+  }, [open])
+
+  // Group preset adhkar by category
   const grouped = ZIKR_LIST.reduce<Record<string, Zikr[]>>((acc, z) => {
     if (!acc[z.category]) acc[z.category] = []
     acc[z.category].push(z)
@@ -96,7 +106,101 @@ export function AdhkarDrawer({ open, onClose, activeId, onSelect }: Props) {
                 </button>
               </div>
 
-              {/* Categories */}
+              {/* My Adhkar section */}
+              <section className="space-y-2">
+                <div className="flex items-center justify-between px-1">
+                  <h3 className="text-[10px] uppercase tracking-widest text-gold dark:text-gold-light/80 font-semibold">
+                    My Adhkar
+                  </h3>
+                  {!showForm && (
+                    <button
+                      type="button"
+                      onClick={() => setShowForm(true)}
+                      className="text-[10px] uppercase tracking-widest font-bold text-emerald-deep dark:text-emerald-200 border border-gold/50 rounded-full px-2.5 py-0.5 hover:bg-gold/10 transition-colors"
+                    >
+                      + Add new
+                    </button>
+                  )}
+                </div>
+
+                {showForm && (
+                  <CustomZikrForm
+                    onCancel={() => setShowForm(false)}
+                    onCreate={(input) => {
+                      const created = custom.add(input)
+                      setShowForm(false)
+                      onSelect(created)
+                      onClose()
+                    }}
+                  />
+                )}
+
+                {custom.list.length === 0 && !showForm && (
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 italic px-1">
+                    Apna zikr yahan add kar — jitni baar parhna hai, target khud
+                    set kar lo.
+                  </p>
+                )}
+
+                {custom.list.length > 0 && (
+                  <ul className="space-y-2">
+                    {custom.list.map((z) => {
+                      const isActive = z.id === activeId
+                      return (
+                        <li key={z.id}>
+                          <div
+                            className={`relative rounded-xl border-2 px-4 py-3 transition-all ${
+                              isActive
+                                ? 'border-gold bg-gradient-to-r from-gold-soft/40 to-emerald-50/40 dark:from-gold/15 dark:to-emerald-deep/40'
+                                : 'border-emerald-brand/20 bg-white/85 dark:bg-[#0F2A22]/70 hover:border-gold/50'
+                            }`}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                onSelect(z)
+                                onClose()
+                              }}
+                              className="w-full text-left"
+                            >
+                              {z.arabic && (
+                                <p
+                                  dir="rtl"
+                                  className="text-base text-emerald-deep dark:text-gold-soft leading-relaxed"
+                                  style={{ fontFamily: 'var(--font-amiri)' }}
+                                >
+                                  {z.arabic}
+                                </p>
+                              )}
+                              <div className="mt-1 flex items-center justify-between gap-3 pr-7">
+                                <span className="text-xs font-semibold text-emerald-deep dark:text-emerald-200 truncate">
+                                  {z.translit}
+                                </span>
+                                <span className="text-[10px] uppercase tracking-widest text-gold dark:text-gold-light/80 font-semibold shrink-0">
+                                  × {z.target}
+                                </span>
+                              </div>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                custom.remove(z.id)
+                              }}
+                              aria-label={`Delete ${z.translit}`}
+                              className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs transition-colors"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                )}
+              </section>
+
+              {/* Preset adhkar categories */}
               {categoryOrder.map((cat) => {
                 const items = grouped[cat]
                 if (!items || items.length === 0) return null

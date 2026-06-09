@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useLanguage } from '@/components/LanguageProvider'
 import { AdhkarDrawer } from '@/components/AdhkarDrawer'
 import { ZIKR_LIST, zikrById, type Zikr } from '@/lib/zikr/list'
+import { customZikrById } from '@/lib/zikr/custom'
 import { useOpenOnParam } from '@/lib/hooks/useOpenOnParam'
 import { BottomNav } from '@/components/BottomNav'
 
@@ -34,7 +35,7 @@ export default function TasbihPage() {
       const raw = localStorage.getItem(STORAGE_KEY)
       if (raw) {
         const saved = JSON.parse(raw) as Saved
-        const found = zikrById(saved.zikrId)
+        const found = zikrById(saved.zikrId) ?? customZikrById(saved.zikrId)
         if (found) setZikr(found)
         if (typeof saved.count === 'number') setCount(saved.count)
         if (typeof saved.rounds === 'number') setRounds(saved.rounds)
@@ -220,18 +221,20 @@ export default function TasbihPage() {
 
         {/* Zikr arabic + translation */}
         <div className="text-center space-y-2">
-          <motion.p
-            key={zikr.id}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            dir="rtl"
-            lang="ar"
-            className="text-2xl sm:text-3xl text-emerald-deep dark:text-gold-soft leading-loose"
-            style={{ fontFamily: 'var(--font-amiri)' }}
-          >
-            {zikr.arabic}
-          </motion.p>
-          {isUrdu ? (
+          {zikr.arabic && (
+            <motion.p
+              key={zikr.id}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              dir="rtl"
+              lang="ar"
+              className="text-2xl sm:text-3xl text-emerald-deep dark:text-gold-soft leading-loose"
+              style={{ fontFamily: 'var(--font-amiri)' }}
+            >
+              {zikr.arabic}
+            </motion.p>
+          )}
+          {isUrdu && zikr.urdu ? (
             <p
               dir="rtl"
               lang="ur"
@@ -240,11 +243,11 @@ export default function TasbihPage() {
             >
               {zikr.urdu}
             </p>
-          ) : (
+          ) : zikr.english ? (
             <p className="text-xs sm:text-sm text-zinc-700 dark:text-zinc-300 italic px-2">
               &ldquo;{zikr.english}&rdquo;
             </p>
-          )}
+          ) : null}
         </div>
 
         {/* The bead */}

@@ -68,6 +68,11 @@ body {
   background-size: 40px 40px;
 }
 
+/* Quran reading-mode: hide Urdu blocks when Mushaf mode is on */
+[data-quran-mode="mushaf"] [data-urdu-block] {
+  display: none;
+}
+
 /* Soft glow utility */
 .glow-emerald {
   box-shadow: 0 0 24px -4px rgba(16, 185, 129, 0.45), 0 0 60px -8px rgba(16, 185, 129, 0.25);

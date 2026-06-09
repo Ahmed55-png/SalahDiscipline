@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getJuzWithTranslation } from '@/lib/api/quran'
 import { BottomNav } from '@/components/BottomNav'
+import { ReadingMode } from '@/components/quran/ReadingMode'
 import { JUZ_LIST } from '@/lib/quran/juz'
 
 export const revalidate = 604800
@@ -112,6 +113,8 @@ export default async function JuzPage({
             Couldn&apos;t load this para right now. Try again shortly.
           </p>
         ) : (
+          <>
+          <ReadingMode>
           <div className="space-y-6">
             {groups.map((g) => (
               <section key={g.surah.number} className="space-y-3">
@@ -152,7 +155,8 @@ export default async function JuzPage({
                     </p>
                     {aya.urdu && (
                       <p
-                        className="text-base text-zinc-700 dark:text-zinc-300 leading-loose text-right"
+                        data-urdu-block
+                        className="text-base text-zinc-700 dark:text-zinc-300 leading-loose text-right pt-1 border-t border-emerald-brand/10"
                         style={{ fontFamily: 'var(--font-nastaliq)' }}
                         dir="rtl"
                       >
@@ -163,8 +167,10 @@ export default async function JuzPage({
                 ))}
               </section>
             ))}
+          </div>
+          </ReadingMode>
 
-            <nav className="flex items-center justify-between pt-2">
+          <nav className="flex items-center justify-between pt-2">
               {n > 1 ? (
                 <Link
                   href={`/quran/juz/${n - 1}`}
@@ -184,7 +190,7 @@ export default async function JuzPage({
                 </Link>
               )}
             </nav>
-          </div>
+          </>
         )}
       </div>
 

@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getSurahWithTranslation } from '@/lib/api/quran'
 import { BottomNav } from '@/components/BottomNav'
+import { ReadingMode } from '@/components/quran/ReadingMode'
 
 export const revalidate = 604800
 
@@ -90,6 +91,7 @@ export default async function SurahPage({
               )}
             </section>
 
+            <ReadingMode>
             <section className="space-y-4">
               {pair.arabic.ayahs.map((aya, i) => {
                 const ur = pair.urdu.ayahs[i]
@@ -125,7 +127,8 @@ export default async function SurahPage({
                     </p>
                     {ur && (
                       <p
-                        className="text-base text-zinc-700 dark:text-zinc-300 leading-loose text-right"
+                        data-urdu-block
+                        className="text-base text-zinc-700 dark:text-zinc-300 leading-loose text-right pt-1 border-t border-emerald-brand/10"
                         style={{ fontFamily: 'var(--font-nastaliq)' }}
                         dir="rtl"
                       >
@@ -136,6 +139,7 @@ export default async function SurahPage({
                 )
               })}
             </section>
+            </ReadingMode>
 
             <nav className="flex items-center justify-between pt-2">
               {n > 1 ? (
