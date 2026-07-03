@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   qiblaBearing,
@@ -36,6 +36,17 @@ export function QiblaCompass() {
   const [location, setLocation] = useState<LocationStatus>({ kind: 'idle' })
   const [compass, setCompass] = useState<CompassStatus>({ kind: 'idle' })
   const [heading, setHeading] = useState<number | null>(null)
+
+  // Accumulated dial rotation. We can't just use `-heading` because framer
+  // will take the long way around when heading crosses 359° -> 1°. So we
+  // track deltas and add them up — the dial can rotate past 360° freely.
+  const [dialRotation, setDialRotation] = useState(0)
+  const [arrowRotation, setArrowRotation] = useState(0)
+  const prevHeadingRef = useRef<number | null>(null)
+  const prevBearingRef = useRef<number | null>(null)
+  // Was a compass event received? If not after activation we surface a
+  // "no compass detected" hint (desktop, PWA on hardware without a sensor).
+  const [gotOrientationEvent, setGotOrientationEvent] = useState(false)
 
   const bearing =
     location.kind === 'ok'
@@ -101,12 +112,14 @@ export function QiblaCompass() {
       // iOS Safari exposes an absolute heading directly.
       if (typeof ev.webkitCompassHeading === 'number') {
         setHeading(ev.webkitCompassHeading)
+        setGotOrientationEvent(true)
         return
       }
       // Chromium: `alpha` is 0 when device Y-axis points to magnetic north
       // (counter-clockwise). Convert to clockwise-from-north heading.
       if (typeof ev.alpha === 'number') {
         setHeading((360 - ev.alpha) % 360)
+        setGotOrientationEvent(true)
       }
     }
 
@@ -115,6 +128,57 @@ export function QiblaCompass() {
     window.addEventListener(evName, onOrient as EventListener)
     return () => window.removeEventListener(evName, onOrient as EventListener)
   }, [compass.kind])
+
+  // Accumulate dial rotation using shortest-path deltas, so a spin from
+  // 359° to 1° goes +2° clockwise (not -358°).
+  useEffect(() => {
+    if (heading === null) return
+    const prev = prevHeadingRef.current
+    if (prev === null) {
+      prevHeadingRef.current = heading
+      setDialRotation(-heading)
+      return
+    }
+    let delta = heading - prev
+    if (delta > 180) delta -= 360
+    if (delta < -180) delta += 360
+    prevHeadingRef.current = heading
+    // The dial rotates opposite to the phone so N stays fixed.
+    setDialRotation((r) => r - delta)
+  }, [heading])
+
+  // Same accumulator for the centre arrow (the shortest rotation from your
+  // heading to the Qibla bearing). If the target flips across ±180 we still
+  // want a smooth turn.
+  useEffect(() => {
+    if (heading === null || location.kind !== 'ok') return
+    const target = shortestRotation(
+      heading,
+      qiblaBearing(location.coords.lat, location.coords.lon)
+    )
+    const prev = prevBearingRef.current
+    if (prev === null) {
+      prevBearingRef.current = target
+      setArrowRotation(target)
+      return
+    }
+    let delta = target - prev
+    if (delta > 180) delta -= 360
+    if (delta < -180) delta += 360
+    prevBearingRef.current = target
+    setArrowRotation((r) => r + delta)
+  }, [heading, location])
+
+  // After the compass goes active, wait a short beat. If we never received
+  // an orientation event, we're on hardware without a magnetometer.
+  useEffect(() => {
+    if (compass.kind !== 'active') return
+    if (gotOrientationEvent) return
+    const t = window.setTimeout(() => {
+      if (!gotOrientationEvent) setCompass({ kind: 'unsupported' })
+    }, 2500)
+    return () => window.clearTimeout(t)
+  }, [compass.kind, gotOrientationEvent])
 
   const enableCompass = useCallback(async () => {
     if (typeof DeviceOrientationEvent === 'undefined') {
@@ -195,9 +259,19 @@ export function QiblaCompass() {
         </p>
       )}
       {compass.kind === 'unsupported' && (
+        <div className="rounded-2xl border border-emerald-brand/20 bg-white/70 dark:bg-[#0F2A22]/60 backdrop-blur-md p-3 text-center space-y-1">
+          <p className="text-xs font-semibold text-emerald-deep dark:text-emerald-200">
+            No compass detected on this device
+          </p>
+          <p className="text-[10px] text-zinc-500 dark:text-zinc-400">
+            Phone pe kholo (real magnetometer chahiye), ya neeche bearing use
+            karke physical compass se face karo.
+          </p>
+        </div>
+      )}
+      {compass.kind === 'active' && !gotOrientationEvent && (
         <p className="text-center text-[11px] text-zinc-500 dark:text-zinc-400 italic">
-          Your device doesn&apos;t expose a compass. Use the bearing below with
-          a physical compass or a maps app.
+          Detecting compass… move your phone in a figure-8 to calibrate.
         </p>
       )}
 
@@ -210,8 +284,8 @@ export function QiblaCompass() {
              to true north). */}
         <motion.div
           className="absolute inset-0 rounded-full border-4 border-gold/60 bg-gradient-to-br from-cream via-white to-gold-soft/40 dark:from-[#0F2A22] dark:via-[#0A1F1A] dark:to-emerald-deep/40 shadow-2xl shadow-emerald-deep/30"
-          animate={{ rotate: heading !== null ? -heading : 0 }}
-          transition={{ type: 'spring', stiffness: 60, damping: 18 }}
+          animate={{ rotate: dialRotation }}
+          transition={{ type: 'spring', stiffness: 120, damping: 20, mass: 0.6 }}
         >
           {/* Islamic pattern in the dial */}
           <div className="absolute inset-4 rounded-full islamic-pattern-dense opacity-30 pointer-events-none" />
@@ -288,8 +362,8 @@ export function QiblaCompass() {
         {rotation !== null && (
           <motion.div
             className="absolute inset-0 flex items-center justify-center pointer-events-none"
-            animate={{ rotate: rotation }}
-            transition={{ type: 'spring', stiffness: 60, damping: 18 }}
+            animate={{ rotate: arrowRotation }}
+            transition={{ type: 'spring', stiffness: 120, damping: 20, mass: 0.6 }}
           >
             <svg width="60" height="140" viewBox="0 0 60 140" aria-hidden>
               <defs>
