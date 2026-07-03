@@ -40,7 +40,7 @@ export default function RootLayout({
       lang="en"
       className={`${jakarta.variable} ${amiri.variable} ${nastaliq.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <ThemeProvider>
           <LanguageProvider>{children}</LanguageProvider>
         </ThemeProvider>

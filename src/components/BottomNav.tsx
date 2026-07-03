@@ -30,11 +30,15 @@ const HadithIcon = () => (
   </svg>
 )
 
-// Adhkar: open book
-const BookIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+// Qibla: compass with an ornate star at the needle
+const QiblaIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 3 L12 5" />
+    <path d="M12 19 L12 21" />
+    <path d="M3 12 L5 12" />
+    <path d="M19 12 L21 12" />
+    <path d="M12 7 L14.5 12 L12 17 L9.5 12 Z" fill="currentColor" stroke="none" />
   </svg>
 )
 
@@ -66,7 +70,7 @@ const items: NavItem[] = [
   { label: 'Home', href: '/dashboard', icon: <HomeIcon /> },
   { label: 'Hadith', href: '#', icon: <HadithIcon />, disabled: true },
   // Tasbih centered + elevated, rendered separately
-  { label: 'Adhkar', href: '/tasbih?open=adhkar', icon: <BookIcon /> },
+  { label: 'Qibla', href: '/qibla', icon: <QiblaIcon /> },
   { label: 'Quran', href: '/quran', icon: <QuranIcon /> },
 ]
 

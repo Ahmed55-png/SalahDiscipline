@@ -11,6 +11,7 @@ A PWA (Progressive Web App) that helps Muslims build the discipline of offering 
 - Push notifications before each prayer
 - Friends system + shared streaks (like Snapchat)
 - Leaderboard among friends
+
 - Offline support (PWA)
 - Installable on mobile home screen
 
