@@ -10,7 +10,10 @@ import { PrayerTimeWatcher } from '@/components/PrayerTimeWatcher'
 import { SubscribeBanner } from '@/components/SubscribeBanner'
 import { getTimingsByCoordinates } from '@/lib/api/aladhan'
 import { LastWeekStrip, type WeekDay } from '@/components/LastWeekStrip'
+import { TasbihLauncher } from '@/components/TasbihLauncher'
+import { BottomNav } from '@/components/BottomNav'
 import { DashboardHeader } from '@/components/DashboardHeader'
+import { NotificationHeartbeat } from '@/components/NotificationHeartbeat'
 import {
   last7Days,
   toIsoDate,
@@ -32,6 +35,15 @@ const PRAYERS = [
 
 function todayIso(): string {
   const d = new Date()
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}
+
+function previousIsoFrom(dateIso: string): string {
+  const d = new Date(`${dateIso}T00:00:00`)
+  d.setDate(d.getDate() - 1)
   const yyyy = d.getFullYear()
   const mm = String(d.getMonth() + 1).padStart(2, '0')
   const dd = String(d.getDate()).padStart(2, '0')
@@ -62,13 +74,13 @@ export default async function DashboardPage() {
     supabase
       .from('profiles')
       .select(
-        'username, city, country, calculation_method, latitude, longitude, location_label'
+        'username, city, country, calculation_method, latitude, longitude, location_label, onboarding_completed, display_name, bio, age, gender'
       )
       .eq('id', user.id)
       .single(),
     supabase
       .from('streaks')
-      .select('current_streak, longest_streak')
+      .select('current_streak, longest_streak, last_prayed_date')
       .eq('user_id', user.id)
       .single(),
     supabase
@@ -85,6 +97,12 @@ export default async function DashboardPage() {
       .lte('prayer_date', weekEndIso),
     getAyahWithTranslation(ayahNumber),
   ])
+
+  // Onboarding gate: if the new user hasn't filled the form yet, force them to.
+  // We only redirect after fetching to avoid an extra round trip on every page load.
+  if (profile && (profile as { onboarding_completed?: boolean }).onboarding_completed === false) {
+    redirect('/onboarding')
+  }
 
   const weekByDate = new Map<string, DayStatuses>()
   for (const row of weekRows ?? []) {
@@ -140,25 +158,47 @@ export default async function DashboardPage() {
       status: ((today?.[p.key] as PrayerStatus | undefined) ?? 'pending') as PrayerStatus,
     }
   })
+  const todayStatuses = prayerRows.map((p) => p.status)
+  const todayHasMissed = todayStatuses.some((s) => s === 'missed')
+  const streakLastDate = streak?.last_prayed_date as string | null | undefined
+  const isStreakDateActive =
+    streakLastDate === todayIsoStr ||
+    streakLastDate === previousIsoFrom(todayIsoStr)
+  const currentStreak =
+    todayHasMissed || !isStreakDateActive ? 0 : (streak?.current_streak ?? 0)
+  const longestStreak = streak?.longest_streak ?? 0
 
   return (
     <main className="relative min-h-screen overflow-hidden">
       <div className="absolute inset-0 islamic-pattern opacity-40 pointer-events-none" />
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cream/40 to-cream dark:via-[#0A1F1A]/40 dark:to-[#0A1F1A] pointer-events-none" />
 
-      <div className="relative z-10 max-w-2xl mx-auto p-4 sm:p-6 space-y-6">
+      <div className="relative z-10 max-w-2xl mx-auto p-4 sm:p-6 pb-28 space-y-6">
         <DashboardHeader
           username={profile?.username ?? 'friend'}
           email={user.email ?? null}
           city={city}
           country={country}
-          currentStreak={streak?.current_streak ?? 0}
-          longestStreak={streak?.longest_streak ?? 0}
+          currentStreak={currentStreak}
+          longestStreak={longestStreak}
           locationLabel={locationLabel}
           hasCoords={hasCoords}
           latitude={lat}
           longitude={lon}
+          displayName={
+            (profile as { display_name?: string | null } | null)
+              ?.display_name ?? null
+          }
+          bio={(profile as { bio?: string | null } | null)?.bio ?? null}
+          age={(profile as { age?: number | null } | null)?.age ?? null}
+          gender={
+            (profile as {
+              gender?: 'male' | 'female' | 'prefer_not_to_say' | null
+            } | null)?.gender ?? null
+          }
         />
+
+        <NotificationHeartbeat />
 
         <PrayerTimeWatcher
           prayers={prayerRows.map((p) => ({
@@ -176,9 +216,11 @@ export default async function DashboardPage() {
 
         <PrayerCheckIn
           prayers={prayerRows}
-          currentStreak={streak?.current_streak ?? 0}
-          longestStreak={streak?.longest_streak ?? 0}
+          currentStreak={currentStreak}
+          longestStreak={longestStreak}
         />
+
+        <TasbihLauncher />
 
         <InstallPrompt />
 
@@ -196,13 +238,12 @@ export default async function DashboardPage() {
                 {prayerData.data.date.hijri.month.en}{' '}
                 {prayerData.data.date.hijri.year} هـ
               </p>
-              <p className="text-[10px] uppercase tracking-widest text-emerald-deep/40 dark:text-emerald-300/40 pt-2">
-                v2 · with notifications & azan
-              </p>
             </div>
           </FadeIn>
         )}
       </div>
+
+      <BottomNav />
     </main>
   )
 }

@@ -15,7 +15,7 @@ export function RotatingGreeting({ phrases, className }: Props) {
   const [index, setIndex] = useState(0)
 
   useEffect(() => {
-    setIndex(Math.floor(Math.random() * phrases.length))
+    queueMicrotask(() => setIndex(Math.floor(Math.random() * phrases.length)))
   }, [phrases])
 
   return <span className={className}>{phrases[index]}</span>

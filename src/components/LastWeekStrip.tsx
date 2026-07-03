@@ -10,6 +10,7 @@ import {
 } from '@/lib/utils/calendar'
 import { CalendarDrawer } from './CalendarDrawer'
 import { useLanguage } from './LanguageProvider'
+import { useOpenOnParam } from '@/lib/hooks/useOpenOnParam'
 
 export type WeekDay = {
   iso: string
@@ -40,6 +41,7 @@ const STATUS_CELL: Record<DayStatus, string> = {
 
 export function LastWeekStrip({ days }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false)
+  useOpenOnParam('calendar', setDrawerOpen)
   const { t, isUrdu } = useLanguage()
   const urduStyle = isUrdu ? { fontFamily: 'var(--font-nastaliq)' } : undefined
   const urduDir = isUrdu ? 'rtl' : undefined

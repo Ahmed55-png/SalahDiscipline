@@ -5,6 +5,7 @@ import { useActionState } from 'react'
 import { loginAction, type LoginState } from './actions'
 import { AuthShell, AuthInput, AuthSubmit } from '@/components/AuthShell'
 import { RotatingGreeting } from '@/components/RotatingGreeting'
+import { OAuthButtons } from '@/components/OAuthButtons'
 
 const initialState: LoginState = { error: null }
 
@@ -32,14 +33,24 @@ export default function LoginPage() {
           autoComplete="email"
           placeholder="you@example.com"
         />
-        <AuthInput
-          id="password"
-          name="password"
-          label="Password"
-          type="password"
-          required
-          autoComplete="current-password"
-        />
+        <div className="space-y-1">
+          <AuthInput
+            id="password"
+            name="password"
+            label="Password"
+            type="password"
+            required
+            autoComplete="current-password"
+          />
+          <div className="text-right">
+            <Link
+              href="/forgot-password"
+              className="text-[11px] text-gold dark:text-gold-light hover:underline"
+            >
+              Forgot password?
+            </Link>
+          </div>
+        </div>
 
         {state.error && (
           <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-md px-3 py-2">
@@ -53,6 +64,8 @@ export default function LoginPage() {
           label="Login"
         />
       </form>
+
+      <OAuthButtons />
 
       <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
         Don&apos;t have an account?{' '}

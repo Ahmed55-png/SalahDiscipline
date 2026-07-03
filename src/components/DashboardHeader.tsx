@@ -17,6 +17,10 @@ type Props = {
   hasCoords: boolean
   latitude: number | null
   longitude: number | null
+  displayName: string | null
+  bio: string | null
+  age: number | null
+  gender: 'male' | 'female' | 'prefer_not_to_say' | null
 }
 
 const GREETING_KEYS = [
@@ -47,7 +51,7 @@ export function DashboardHeader(props: Props) {
           ٱلسَّلَامُ عَلَيْكُمْ
         </p>
         <h1 className="text-2xl font-bold text-emerald-deep dark:text-emerald-200 tracking-tight truncate">
-          {props.username}
+          {props.displayName || props.username}
         </h1>
         <p
           className="text-xs text-emerald-deep/70 dark:text-emerald-300/70 font-medium"

@@ -18,6 +18,7 @@ export const dynamic = 'force-dynamic'
 // 5 min, but the actual fire can drift ±2 min, so ±3 min covers it
 // while staying tight enough that adjacent cron runs don't both fire.
 const PRAYER_WINDOW_MIN = 3
+const AYAH_INTERVAL_MIN = 10
 
 type Profile = {
   id: string
@@ -53,7 +54,8 @@ function parseHHMM(time: string | undefined): { h: number; m: number } | null {
 }
 
 function minutesBetween(a: { h: number; m: number }, b: { h: number; m: number }): number {
-  return Math.abs(a.h * 60 + a.m - (b.h * 60 + b.m))
+  const diff = Math.abs(a.h * 60 + a.m - (b.h * 60 + b.m))
+  return Math.min(diff, 24 * 60 - diff)
 }
 
 function todayDateString(now: Date): string {
@@ -61,6 +63,25 @@ function todayDateString(now: Date): string {
   const mm = String(now.getMonth() + 1).padStart(2, '0')
   const dd = String(now.getDate()).padStart(2, '0')
   return `${yyyy}-${mm}-${dd}`
+}
+
+function localPartsForTimeZone(now: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(now)
+  const get = (type: string) =>
+    parts.find((part) => part.type === type)?.value ?? ''
+  return {
+    h: Number(get('hour')),
+    m: Number(get('minute')),
+    date: `${get('year')}-${get('month')}-${get('day')}`,
+  }
 }
 
 async function sendPush(sub: Subscription, payload: object) {
@@ -113,26 +134,24 @@ export async function GET(req: NextRequest) {
   const now = new Date()
   const curHM = { h: now.getHours(), m: now.getMinutes() }
   const dateStr = todayDateString(now)
-  const isTopOfHour = now.getMinutes() < 5 // Send hourly ayah only near :00
+  const ayahBucket = Math.floor(now.getMinutes() / AYAH_INTERVAL_MIN)
 
-  // Build hourly ayah payload (only at top of hour)
+  // Build ayah payload on every cron run. GitHub Actions controls the
+  // 10-minute cadence; the tag buckets retries so duplicate runs replace.
   let ayahPayload: {
     title: string
     body: string
     url: string
     tag: string
   } | null = null
-  if (isTopOfHour) {
-    const ayahNum = randomAyahNumber()
-    const ayah = await getAyahWithTranslation(ayahNum)
-    if (ayah) {
-      ayahPayload = {
-        title: `Surah ${ayah.arabic.surah.englishName} · ${ayah.arabic.surah.number}:${ayah.arabic.numberInSurah}`,
-        body: ayah.urdu.text,
-        url: '/dashboard',
-        // Same tag for the whole hour, so duplicate sends (if any) replace
-        tag: `ayah-${dateStr}-${curHM.h}`,
-      }
+  const ayahNum = randomAyahNumber()
+  const ayah = await getAyahWithTranslation(ayahNum)
+  if (ayah) {
+    ayahPayload = {
+      title: `Surah ${ayah.arabic.surah.englishName} · ${ayah.arabic.surah.number}:${ayah.arabic.numberInSurah}`,
+      body: ayah.urdu.text,
+      url: '/dashboard',
+      tag: `ayah-${dateStr}-${curHM.h}-${ayahBucket}`,
     }
   }
 
@@ -194,6 +213,10 @@ export async function GET(req: NextRequest) {
         timings = null
       }
       if (timings) {
+        const localNow = localPartsForTimeZone(
+          now,
+          timings.data.meta.timezone || 'UTC'
+        )
         const prayers: Array<[string, string]> = [
           ['Fajr', timings.data.timings.Fajr],
           ['Dhuhr', timings.data.timings.Dhuhr],
@@ -203,7 +226,7 @@ export async function GET(req: NextRequest) {
         ]
         for (const [label, time] of prayers) {
           const hm = parseHHMM(time)
-          if (hm && minutesBetween(curHM, hm) <= PRAYER_WINDOW_MIN) {
+          if (hm && minutesBetween(localNow, hm) <= PRAYER_WINDOW_MIN) {
             prayerMatch = { label, time }
             break
           }
@@ -211,7 +234,8 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Build payloads. Prayer notification ALWAYS wins over ayah.
+    // Build payloads. Ayah is intentionally sent every scheduled cron run
+    // during this test period; prayer can be sent additionally when matched.
     const payloads: Array<{
       title: string
       body: string
@@ -222,14 +246,15 @@ export async function GET(req: NextRequest) {
 
     if (prayerMatch) {
       payloads.push({
-        title: `🕌 ${prayerMatch.label} time`,
-        body: `It's time for ${prayerMatch.label}. Open the app to mark your prayer.`,
+        title: `${prayerMatch.label} · ${prayerMatch.time}`,
+        body: `It's time for ${prayerMatch.label}. Tap to play the adhan and mark your prayer.`,
         prayer: prayerMatch.label.toLowerCase(),
-        url: '/dashboard',
+        url: `/dashboard?adhan=${prayerMatch.label.toLowerCase()}`,
         // Same tag for one prayer per day, so duplicate cron runs replace
         tag: `prayer-${prayerMatch.label.toLowerCase()}-${dateStr}`,
       })
-    } else if (ayahPayload) {
+    }
+    if (ayahPayload) {
       payloads.push(ayahPayload)
     }
 
@@ -267,7 +292,8 @@ export async function GET(req: NextRequest) {
     gone: totalGone,
     users: subsByUser.size,
     window_min: PRAYER_WINDOW_MIN,
-    is_top_of_hour: isTopOfHour,
+    ayah_interval_min: AYAH_INTERVAL_MIN,
+    ayah_bucket: ayahBucket,
     now: `${String(curHM.h).padStart(2, '0')}:${String(curHM.m).padStart(2, '0')}`,
     debug,
   })

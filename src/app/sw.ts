@@ -28,7 +28,7 @@ serwist.addEventListeners()
 // forces this SW, on activate, to delete EVERY cache that isn't already
 // tagged with the current version. Next page load then refetches from the
 // network with the new build's chunks.
-const CACHE_VERSION = 'v3-2026-06-03'
+const CACHE_VERSION = 'v4-2026-06-04'
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
@@ -60,6 +60,7 @@ type PushPayload = {
   title?: string
   body?: string
   prayer?: string
+  tag?: string
   url?: string
 }
 
@@ -72,17 +73,27 @@ self.addEventListener('push', (event) => {
   }
 
   const title = payload.title ?? 'Salah Discipline'
-  const body = payload.body ?? 'Namaz ka waqt ho gaya'
+  const body = payload.body ?? 'A reminder to stay close to Allah.'
+  const isPrayer = !!payload.prayer
+  const options: NotificationOptions & {
+    renotify?: boolean
+    vibrate?: number[]
+  } = {
+    body,
+    icon: '/icon',
+    badge: '/icon',
+    tag: payload.tag ?? payload.prayer ?? 'salah-notification',
+    data: { url: payload.url ?? '/dashboard' },
+    requireInteraction: isPrayer,
+    renotify: isPrayer,
+    silent: false,
+    vibrate: isPrayer
+      ? [700, 250, 700, 250, 700, 500, 1000]
+      : [250, 100, 250],
+  }
 
   event.waitUntil(
-    self.registration.showNotification(title, {
-      body,
-      icon: '/icon',
-      badge: '/icon',
-      tag: payload.prayer ?? 'salah-notification',
-      data: { url: payload.url ?? '/dashboard' },
-      requireInteraction: false,
-    })
+    self.registration.showNotification(title, options)
   )
 })
 

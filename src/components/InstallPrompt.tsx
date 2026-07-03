@@ -21,7 +21,7 @@ export function InstallPrompt() {
     const standalone =
       window.matchMedia('(display-mode: standalone)').matches ||
       (window.navigator as Navigator & { standalone?: boolean }).standalone === true
-    setIsStandalone(standalone)
+    queueMicrotask(() => setIsStandalone(standalone))
     if (standalone) return
 
     // User dismissed recently?

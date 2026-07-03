@@ -30,7 +30,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY)
-      if (isLang(saved)) setLangState(saved)
+      if (isLang(saved)) queueMicrotask(() => setLangState(saved))
     } catch {
       // ignore (private mode etc.)
     }
